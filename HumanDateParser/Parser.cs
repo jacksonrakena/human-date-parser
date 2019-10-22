@@ -10,9 +10,11 @@ namespace HumanDateParser
         private readonly Dictionary<string, int> _days = new Dictionary<string, int>();
 
         private readonly TokenBuffer _tokens;
+        private readonly DateTime _baseTime;
 
-        public Parser(Tokeniser tokeniser)
+        public Parser(Tokeniser tokeniser, DateTime relativeTo)
         {
+            _baseTime = relativeTo;
             _months.Add("JAN", 1);
             _months.Add("FEB", 2);
             _months.Add("MAR", 3);
@@ -65,9 +67,52 @@ namespace HumanDateParser
             };
         }
 
+        public void ReadPreviousTimeUnit(ref DateTime baseTime, Token specifierOrDowUnitToken)
+        {
+            switch (specifierOrDowUnitToken.Kind)
+            {
+                case TokenKind.YearSpecifier:
+                    baseTime = baseTime.AddYears(-1);
+                    break;
+                case TokenKind.MonthSpecifier:
+                    baseTime = baseTime.AddMonths(-1);
+                    break;
+                case TokenKind.WeekSpecifier:
+                    baseTime = baseTime.AddDays(-7);
+                    break;
+                case TokenKind.DaySpecifier:
+                    // this is literally 'last day' (yesterday)
+                    baseTime = baseTime.AddDays(-1);
+                    break;
+                case TokenKind.LiteralMonth:
+                    var curMonth = baseTime.Month;
+                    var newMonth = _months[specifierOrDowUnitToken.Text.ToUpper()];
+                    if (curMonth == newMonth) baseTime = baseTime.AddYears(-1);
+                    else if (curMonth < newMonth) baseTime = baseTime.AddMonths(-12 + (newMonth - curMonth));
+                    else baseTime = baseTime.AddMonths(-12 + newMonth - curMonth);
+                    break;
+                case TokenKind.LiteralDay:
+                    if (!Enum.TryParse<DayOfWeek>(specifierOrDowUnitToken.Text, true, out var day))
+                        throw new ParseException($"{specifierOrDowUnitToken.Text} is not a valid day of the week.");
+
+                    if (day == baseTime.DayOfWeek) baseTime = baseTime.AddDays(-7);
+                    else
+                    {
+                        baseTime = baseTime.AddDays(-7);
+                        var v = day.CompareTo(baseTime.DayOfWeek);
+                        if (v > 0) v = 0 - v;
+                        baseTime = baseTime.AddDays(v);
+                    }
+                    break;
+
+                default:
+                    throw new ParseException($"'Last {specifierOrDowUnitToken.Text}' is not a valid relative date.");
+            }
+        }
+
         public DateTime Parse()
         {
-            var date = DateTime.Now;
+            var date = _baseTime;
 
             var currentToken = _tokens.CurrentToken;
             while (currentToken.Kind != TokenKind.BufferReadEnd)
@@ -76,8 +121,11 @@ namespace HumanDateParser
                 {
                     case TokenKind.Number:
                         if (!_tokens.MoveNext()) throw new ParseException($"Cannot have number without units following.");
-                        Console.WriteLine($"Value token: " + currentToken.Kind.ToString() + $" Specifier token: " + _tokens.CurrentToken.Kind.ToString());
                         ReadImpliedRelativeTimeSpan(ref date, currentToken, _tokens.CurrentToken);
+                        break;
+                    case TokenKind.Last:
+                        if (!_tokens.MoveNext()) throw new ParseException($"Cannot have 'last' without day of week, or specifier unit following.");
+                        ReadPreviousTimeUnit(ref date, _tokens.CurrentToken);
                         break;
                 }
                 _tokens.MoveNext();

@@ -13,8 +13,8 @@ namespace HumanDateParser
         /// </summary>
         /// <param name="dateString">A human-readable date.</param>
         /// <returns>The provided date, in <see cref="DateTime"/> format.</returns>
-        public static DateTime Parse(string dateString)
-            => new Parser(new Tokeniser(new CharacterBuffer(dateString, 3))).Parse();
+        public static DateTime Parse(string dateString, DateTime? relativeTo = null)
+            => new Parser(new Tokeniser(new CharacterBuffer(dateString, 3)), relativeTo ?? DateTime.Now).Parse();
     }
 
 }

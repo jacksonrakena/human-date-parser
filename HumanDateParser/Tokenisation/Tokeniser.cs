@@ -92,7 +92,7 @@ namespace HumanDateParser
                 case "NOVEMBER":
                 case "DEC":
                 case "DECEMBER":
-                    return new Token(TokenKind.MonthAbsolute, identifier.ToUpper());
+                    return new Token(TokenKind.LiteralMonth, identifier.ToUpper());
                 case "MONDAY":
                 case "TUESDAY":
                 case "WEDNESDAY":
@@ -100,7 +100,7 @@ namespace HumanDateParser
                 case "FRIDAY":
                 case "SATURDAY":
                 case "SUNDAY":
-                    return new Token(TokenKind.DayAbsolute, identifier.ToUpper());
+                    return new Token(TokenKind.LiteralDay, identifier.ToUpper());
                 case "YEAR":
                 case "YEARS":
                     return new Token(TokenKind.YearSpecifier, "<year>");
