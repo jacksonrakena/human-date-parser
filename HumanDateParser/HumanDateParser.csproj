@@ -1,7 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.1.0</Version>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <VersionPrefix Condition=" '$(BuildNumber)' != '' ">$(VersionPrefix)-$(BuildNumber)</VersionPrefix>
+    <AssemblyName>HumanDateParser</AssemblyName>
+    <Description>Human-readable date parsing for .NET</Description>
+    <Authors>Abyssal, ti-ka</Authors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Nullable>Enable</Nullable>
   </PropertyGroup>
 </Project>

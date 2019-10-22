@@ -1,31 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace HumanDateParser
 {
-    public class Parser
+    internal class Parser
     {
-        public List<string> Errors = new List<string>();
         private readonly Dictionary<string, int> _months = new Dictionary<string, int>();
         private readonly Dictionary<string, int> _days = new Dictionary<string, int>();
 
-        private const int LookaheadDepth = 2;
-        private readonly TokenBuffer _input;
-        private DateRange _dateRange = null;
+        private readonly TokenBuffer _tokens;
 
-        public Parser(Lexer lex)
-        {
-            Init();
-            _input = new TokenBuffer(lex, LookaheadDepth);
-        }
-
-        public Parser(TokenBuffer t)
-        {
-            Init();
-            _input = t;
-        }
-
-        private void Init()
+        public Parser(Tokeniser tokeniser)
         {
             _months.Add("JAN", 1);
             _months.Add("FEB", 2);
@@ -52,77 +38,119 @@ namespace HumanDateParser
             _months.Add("NOVEMBER", 11);
             _months.Add("DECEMBER", 12);
 
+            _tokens = new TokenBuffer(tokeniser);
         }
 
-        public DateRange Eval()
+        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, Token numberValueToken, Token specifierTypeToken)
         {
-            _dateRange = new DateRange();
-            DateExpression();
-
-            while (Peek(1).Kind != TokenKind.EOF){
-                if (Peek(1).Kind == TokenKind.TO) Load();
-                DateExpression();
-            }
-            return _dateRange;
-        }
-
-        private void DateExpression()
-        {
-            switch (Peek(1).Kind)
+            var peekToken = _tokens.PeekNext();
+            var number = int.Parse(numberValueToken.Text);
+            if (peekToken != null && peekToken.Kind == TokenKind.Ago) number *= -1;
+            switch (specifierTypeToken.Kind)
             {
-                case TokenKind.TODAY:
-                    _dateRange.AddDate(Today);
-                    Load();
+                case TokenKind.DaySpecifier:
+                    baseTime = baseTime.AddDays(number);
                     break;
-                case TokenKind.TOMMOROW:
-                    _dateRange.AddDate(Today.AddDays(1));
-                    Load();
+                case TokenKind.MonthSpecifier:
+                    baseTime = baseTime.AddMonths(number);
                     break;
-                case TokenKind.YESTERDAY:
-                    _dateRange.AddDate(Today.AddDays(-1));
-                    Load();
+                case TokenKind.WeekSpecifier:
+                    baseTime = baseTime.AddDays(7 * number);
                     break;
-                case TokenKind.DAY_IDENTIFIER:
-                    DayDateIdent(Peek(1).Text);
-                    Load();
+                case TokenKind.YearSpecifier:
+                    baseTime = baseTime.AddYears(number);
                     break;
-                case TokenKind.NUMBER:
-                    var num = int.Parse(Peek(1).Text);
-                    Load();
-                    switch(Peek(1).Kind)
-                    {
-                        case TokenKind.DAY:
-                        case TokenKind.WEEK:
-                        case TokenKind.MONTH:
-                        case TokenKind.YEAR:
-                            NumQuickDateIdent(num);
-                            break;
-                        case TokenKind.MONTH_MODIFIER:
-                            Load();
-                            MonthDateIdent(num);
-                            break;
-                    }
+                default:
+                    throw new ParseException($"Invalid unit following '{numberValueToken.Text}'.");
+            };
+        }
+
+        public DateTime Parse()
+        {
+            var date = DateTime.Now;
+
+            var currentToken = _tokens.CurrentToken;
+            while (currentToken.Kind != TokenKind.BufferReadEnd)
+            {
+                switch (currentToken.Kind)
+                {
+                    case TokenKind.Number:
+                        if (!_tokens.MoveNext()) throw new ParseException($"Cannot have number without units following.");
+                        Console.WriteLine($"Value token: " + currentToken.Kind.ToString() + $" Specifier token: " + _tokens.CurrentToken.Kind.ToString());
+                        ReadImpliedRelativeTimeSpan(ref date, currentToken, _tokens.CurrentToken);
+                        break;
+                }
+                _tokens.MoveNext();
+                currentToken = _tokens.CurrentToken;
+            }
+            return date;
+        }
+        /*
+        private DateTime EvaluateDateExpression()
+        {
+            var load = true;
+            while (load)
+            {
+                var tokenCanMove = _tokens.MoveNext();
+                if (!tokenCanMove)
+                {
+                    load = false;
                     break;
-                case TokenKind.NEXT:
-                    Load();
-                    NumQuickDateIdent(1);
-                    break;
-                case TokenKind.PREVIOUS:
-                    Load();
-                    NumQuickDateIdent(-1);
-                    break;
+                }
+                var token = _tokens.CurrentToken;
+                switch (token.Kind)
+                {
+                    case TokenKind.Today:
+                        return DateTime.Now.Date;
+                    case TokenKind.Tomorrow:
+                        return DateTime.Now.Date.AddDays(1);
+                    case TokenKind.Yesterday:
+                        return DateTime.Now.Date.AddDays(-1);
+                    case TokenKind.DayAbsolute:
+                        return DateTime.Now.Date.AddDays(ParseRelativeDay(token.Text));
+                    case TokenKind.Number:
+                        if (!_tokens.MoveNext()) throw new ParseException($"Unknown unit type for number '{token.Text}'");
+                        var number = int.Parse(token.Text);
+                        var unitType = _tokens.CurrentToken;
+                        if (_tokens.PeekNext()!.Kind == TokenKind.Ago) number *= -1;
+                        return unitType.Kind switch
+                        {
+                            TokenKind.DaySpecifier => DateTime.Now.AddDays(number),
+                            TokenKind.MonthSpecifier => DateTime.Now.AddMonths(number),
+                            TokenKind.WeekSpecifier => DateTime.Now.AddDays(7 * number),
+                            TokenKind.YearSpecifier => DateTime.Now.AddYears(number),
+                            // month relative somewhere here
+                            _ => throw new ParseException($"Unknown unit type for number '{token.Text}'"),
+                        };
+                    case TokenKind.Next:
+                        if (!_tokens.MoveNext()) throw new ParseException($"Cannot have 'next' without a following specifier.");
+                        return _tokens.CurrentToken.Kind switch
+                        {
+                            TokenKind.WeekSpecifier => DateTime.Now.AddDays(7),
+                            TokenKind.MonthSpecifier => DateTime.Now.AddMonths(1),
+                            TokenKind.YearSpecifier => DateTime.Now.AddYears(1)
+                        };
+                    case TokenKind.Last:
+                        if (!_tokens.MoveNext()) throw new ParseException($"Cannot have 'last' without a following specifier.");
+                        return _tokens.CurrentToken.Kind switch
+                        {
+                            TokenKind.WeekSpecifier => DateTime.Now.AddDays(-7),
+                            TokenKind.MonthSpecifier => DateTime.Now.AddMonths(-1),
+                            TokenKind.YearSpecifier => DateTime.Now.AddYears(-1)
+                        };
+                }
             }
 
             //Get Or Time Year
             switch (Peek(1).Kind)
             {
-                case TokenKind.NUMBER:
+                case TokenKind.Number:
                     Year();
                     Load();
-                    if (Peek(1).Kind == TokenKind.AT)
+                    if (Peek(1).Kind == TokenKind.At)
                         Time();
                     break;
-                case TokenKind.AT:
+                case TokenKind.At:
                     Time();
                     break;
             }
@@ -133,16 +161,16 @@ namespace HumanDateParser
         private void Time()
         {
             Load();
-            if (Peek(1).Kind == TokenKind.NUMBER)
+            if (Peek(1).Kind == TokenKind.Number)
             {
                 var hourPart = int.Parse(Peek(1).Text);
                 var minPart = 0;
                 Load();
 
-                if (Peek(1).Kind == TokenKind.COLON)
+                if (Peek(1).Kind == TokenKind.Colon)
                 {
                     Load();
-                    if(Peek(1).Kind == TokenKind.NUMBER)
+                    if(Peek(1).Kind == TokenKind.Number)
                     {
                         minPart = int.Parse(Peek(1).Text);
                         Load();
@@ -154,7 +182,7 @@ namespace HumanDateParser
                     }
                 }
 
-                if (Peek(1).Kind == TokenKind.TIME_MODIFIER && Peek(1).Text == "PM" && hourPart <= 12) hourPart = hourPart + 12;
+                if (Peek(1).Kind == TokenKind.TimeRelative && Peek(1).Text == "PM" && hourPart <= 12) hourPart = hourPart + 12;
 
 
                 _dateRange.CurrentDate = _dateRange.CurrentDate.SetTime(hourPart, minPart);
@@ -173,7 +201,7 @@ namespace HumanDateParser
 
         private void MonthDateIdent(int num)
         {
-            if (Peek(1).Kind == TokenKind.MONTH_IDENTIFIER)
+            if (Peek(1).Kind == TokenKind.MonthAbsolute)
             {
                 _dateRange.AddDate(new DateTime(DateTime.Now.Year, _months[Peek(1).Text], num));
                 Load();
@@ -182,60 +210,48 @@ namespace HumanDateParser
                 _dateRange.AddDate(new DateTime(DateTime.Now.Year, DateTime.Now.Month, num));
         }
 
-        private void DayDateIdent(string dayString)
+        private static int ParseRelativeDay(string dayString)
         {
-            for (var i = 0; i < 7; i++ )
+            try
             {
-                if (Today.AddDays(i).DayOfWeek == (DayOfWeek)Enum.Parse(typeof(DayOfWeek), dayString, true))
+                var dayOfWeek = Enum.Parse<DayOfWeek>(dayString, true);
+
+                for (var i = 0; i < 7; i++)
                 {
-                    _dateRange.AddDate(Today.AddDays(i));
-                    return;
+                    if (Today.AddDays(i).DayOfWeek == dayOfWeek)
+                    {
+                        return i;
+                    }
                 }
+                throw new ParseException($"Unable to parse day '{dayString}'.");
+            } catch (ArgumentException)
+            {
+                throw new ParseException($"Unable to parse day '{dayString}'.");
             }
-            Errors.Add($"Unable to parse day '{dayString}'");
         }
 
         private void NumQuickDateIdent(int num)
         {
-            if (Peek(2).Kind == TokenKind.AGO) num = num * -1;
+            if (Peek(2).Kind == TokenKind.Ago) num = num * -1;
             switch (Peek(1).Kind)
             {
-                case TokenKind.DAY:
+                case TokenKind.DaySpecifier:
                     _dateRange.AddDate(Today.AddDays(num));
                     Load();
                     break;
-                case TokenKind.WEEK:
+                case TokenKind.WeekSpecifier:
                     _dateRange.AddDate(Today.AddDays(num * 7));
                     Load();
                     break;
-                case TokenKind.MONTH:
+                case TokenKind.MonthSpecifier:
                     _dateRange.AddDate(Today.AddMonths(num));
                     Load();
                     break;
-                case TokenKind.YEAR:
+                case TokenKind.YearSpecifier:
                     _dateRange.AddDate(Today.AddYears(num));
                     Load();
                     break;
             }
-        }
-
-        private static DateTime Today = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day);
-
-        #region TokenBufferWrapper
-        private void Load(int length)
-        {
-            _input.Load(length);
-        }
-
-        private void Load()
-        {
-            _input.Load();
-        }
-
-        private Token Peek(int pos)
-        {
-            return _input.Peek(pos);
-        }
-        #endregion
+        }*/
     }
 }

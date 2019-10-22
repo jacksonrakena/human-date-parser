@@ -1,6 +1,6 @@
 ﻿namespace HumanDateParser
 {
-    public class Token
+    internal class Token
     {
         public string Text { get; set; }
         public TokenKind Kind { get; set; }
