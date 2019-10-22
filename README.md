@@ -1,28 +1,11 @@
-# Human Date Parser
-Parser human readable dates to `System.DateTime`. Based on TimeStamper and updated to work with Asp.Net Core/.NET Framwork.
+# 🖍 Human-readable date parsing
+A date parser that can parse human-readable relative and absolute dates to `System.DateTime` instances. This is an updated fork of [ti-ka/human-date-parser](https://github.com/ti-ka/human-date-parser).
 
-Installation:  
-https://www.nuget.org/packages/HumanDateParser/
----
-**Nuget Package Manager:**
-```
-Install-Package HumanDateParser -Version 1.1.0
-```
-
-**Dotnet CLI:**
-```
-dotnet add package HumanDateParser --version 1.1.0
-```
-
-
-Usage:
----
+### ✍ Usage
 ```csharp
 DateParser.Parse("1 month ago")
 DateParser.Parse("after 15 days")
 DateParser.Parse("15th feb 2010 at 5:30pm")
 ```
-
-Contribute:
----
-Please add more unit tests create a pull request.
+### Contributing
+Feel free to contribute. Original code belongs to [ti-ka](https://github.com/ti-ka/human-date-parser).
