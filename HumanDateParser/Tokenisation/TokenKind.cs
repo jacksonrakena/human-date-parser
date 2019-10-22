@@ -21,6 +21,7 @@
         At,
         Ago,
         Colon,
-        BufferReadEnd
+        BufferReadEnd,
+        In
     }
 }

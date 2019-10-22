@@ -2,7 +2,7 @@
 
 namespace HumanDateParser
 {
-    internal class CharacterBuffer : ICharacterBuffer
+    internal class CharacterBuffer
     {
         private int _currentPosition;
         private readonly int[] _bufferArray;

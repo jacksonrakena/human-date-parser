@@ -19,6 +19,17 @@ namespace HumanDateParser.Tests
 
         [TestMethod]
         [DataRow(1), DataRow(2), DataRow(3)]
+        public void TestImpliedRelativeFutureTimes_InKind(int months)
+        {
+            var actual = DateTime.Now.AddMonths(months);
+            var parsed = HumanDateParser.Parse($"in {months} months");
+
+            Assert.IsNotNull(parsed);
+            Assert.AreEqual(actual.ToString(), parsed.ToString());
+        }
+
+        [TestMethod]
+        [DataRow(1), DataRow(2), DataRow(3)]
         public void TestImpliedRelativeFutureTimes_Negative(int monthsAgo)
         {
             var actual = DateTime.Now.AddMonths(monthsAgo * -1);

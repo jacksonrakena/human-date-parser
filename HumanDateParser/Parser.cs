@@ -7,7 +7,6 @@ namespace HumanDateParser
     internal class Parser
     {
         private readonly Dictionary<string, int> _months = new Dictionary<string, int>();
-        private readonly Dictionary<string, int> _days = new Dictionary<string, int>();
 
         private readonly TokenBuffer _tokens;
         private readonly DateTime _baseTime;
@@ -48,22 +47,13 @@ namespace HumanDateParser
             var peekToken = _tokens.PeekNext();
             var number = int.Parse(numberValueToken.Text);
             if (peekToken != null && peekToken.Kind == TokenKind.Ago) number *= -1;
-            switch (specifierTypeToken.Kind)
+            baseTime = specifierTypeToken.Kind switch
             {
-                case TokenKind.DaySpecifier:
-                    baseTime = baseTime.AddDays(number);
-                    break;
-                case TokenKind.MonthSpecifier:
-                    baseTime = baseTime.AddMonths(number);
-                    break;
-                case TokenKind.WeekSpecifier:
-                    baseTime = baseTime.AddDays(7 * number);
-                    break;
-                case TokenKind.YearSpecifier:
-                    baseTime = baseTime.AddYears(number);
-                    break;
-                default:
-                    throw new ParseException($"Invalid unit following '{numberValueToken.Text}'.");
+                TokenKind.DaySpecifier => baseTime.AddDays(number),
+                TokenKind.MonthSpecifier => baseTime.AddMonths(number),
+                TokenKind.WeekSpecifier => baseTime.AddDays(7 * number),
+                TokenKind.YearSpecifier => baseTime.AddYears(number),
+                _ => throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit following '{numberValueToken.Text}'.")
             };
         }
 
@@ -93,7 +83,7 @@ namespace HumanDateParser
                     break;
                 case TokenKind.LiteralDay:
                     if (!Enum.TryParse<DayOfWeek>(specifierOrDowUnitToken.Text, true, out var day))
-                        throw new ParseException($"{specifierOrDowUnitToken.Text} is not a valid day of the week.");
+                        throw new ParseException(ParseFailReason.InvalidDayOfWeek, $"{specifierOrDowUnitToken.Text} is not a valid day of the week.");
 
                     if (day == baseTime.DayOfWeek) baseTime = baseTime.AddDays(-7);
                     else
@@ -106,7 +96,7 @@ namespace HumanDateParser
                     break;
 
                 default:
-                    throw new ParseException($"'Last {specifierOrDowUnitToken.Text}' is not a valid relative date.");
+                    throw new ParseException(ParseFailReason.InvalidUnit, $"'Last {specifierOrDowUnitToken.Text}' is not a valid relative date.");
             }
         }
 
@@ -119,12 +109,18 @@ namespace HumanDateParser
             {
                 switch (currentToken.Kind)
                 {
+                    case TokenKind.In:
+                        if (!_tokens.MoveNext() || _tokens.CurrentToken.Kind != TokenKind.Number) throw new ParseException(ParseFailReason.NumberExpected, "Expected a number to come after 'in'.");
+                        var numToken = _tokens.CurrentToken;
+                        if (!_tokens.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have number without units following.");
+                        ReadImpliedRelativeTimeSpan(ref date, numToken, _tokens.CurrentToken);
+                        break;
                     case TokenKind.Number:
-                        if (!_tokens.MoveNext()) throw new ParseException($"Cannot have number without units following.");
+                        if (!_tokens.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have number without units following.");
                         ReadImpliedRelativeTimeSpan(ref date, currentToken, _tokens.CurrentToken);
                         break;
                     case TokenKind.Last:
-                        if (!_tokens.MoveNext()) throw new ParseException($"Cannot have 'last' without day of week, or specifier unit following.");
+                        if (!_tokens.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'last' without day of week, or specifier unit following.");
                         ReadPreviousTimeUnit(ref date, _tokens.CurrentToken);
                         break;
                 }

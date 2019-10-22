@@ -6,9 +6,9 @@ namespace HumanDateParser
 {
     internal class Tokeniser
     {
-        public ICharacterBuffer _buffer;
+        public CharacterBuffer _buffer;
 
-        public Tokeniser(ICharacterBuffer charBuffer)
+        public Tokeniser(CharacterBuffer charBuffer)
         {
             _buffer = charBuffer;
         }
@@ -42,7 +42,7 @@ namespace HumanDateParser
                             if (bufPeek2 == '-' || bufPeek2 == '/' || bufPeek3 == '-' || bufPeek3 == '/')
                                 return new Token(TokenKind.DateAbsolute, ReadIdentifierUntilEnd());
            
-                            return GetNumber();
+                            return ReadNumber();
                         }
                         else
                         {
@@ -53,10 +53,6 @@ namespace HumanDateParser
             }
         }
 
-        /// <summary>
-        ///     Parses the next identifier from the character buffer, and returns it's token.
-        /// </summary>
-        /// <returns>A token.</returns>
         private Token ParseNextIdentifier()
         {
             var identifier = ReadIdentifierUntilEnd();
@@ -123,6 +119,8 @@ namespace HumanDateParser
                     return new Token(TokenKind.To, "<to>");
                 case "AGO":
                     return new Token(TokenKind.Ago, "<ago>");
+                case "IN":
+                    return new Token(TokenKind.In, "<in>");
                 case "TH":
                 case "RD":
                 case "ND":
@@ -134,7 +132,7 @@ namespace HumanDateParser
                 case "END":
                     return new Token(TokenKind.BufferReadEnd, "<eof>");
                 default:
-                    throw new ParseException($"Unknown token '{identifier}'.");
+                    throw new ParseException(ParseFailReason.InvalidUnit, $"Unknown token '{identifier}'.");
             }
         }
 
@@ -149,7 +147,7 @@ namespace HumanDateParser
             return s.ToString();
         }
 
-        private Token GetNumber()
+        private Token ReadNumber()
         {
             var s = new StringBuilder();
             var c = (char)_buffer.Peek(1);
