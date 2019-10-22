@@ -1,7 +1,8 @@
-# 🖍 Human-readable date parsing
-A date parser that can parse human-readable relative and absolute dates to `System.DateTime` instances. This is a completely rewritten version of [ti-ka/human-date-parser](https://github.com/ti-ka/human-date-parser).
+# 🖍 Human-readable date parsing for .NET
+A .NET date parser that can parse human-readable relative and absolute dates to `System.DateTime` instances. This is a completely rewritten version of [ti-ka/human-date-parser](https://github.com/ti-ka/human-date-parser).
 
 ### ✍ Usage
+(C#)
 ```csharp
 DateParser.Parse("1 month ago")
 DateParser.Parse("In 15 days")
