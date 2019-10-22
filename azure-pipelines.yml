@@ -20,17 +20,17 @@ steps:
 - task: NuGetToolInstaller@0
   displayName: 'Install NuGet'
 
-- task: NuGetCommand@2
-  displayName: 'Restore packages'
+- task: DotNetCoreCLI@2
+  displayName: 'Restore'
   inputs:
-    restoreSolution: '$(solution)'
+    command: 'restore'
+    projects: 'HumanDateParser\HumanDateParser.csproj'
 
-- task: VSBuild@1
+- task: DotNetCoreCLI@2
   displayName: 'Build project'
   inputs:
-    solution: '$(solution)'
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
+    command: 'build'
+    projects: 'HumanDateParser\HumanDateParser.csproj'
 
 - script: |
     dotnet pack "HumanDateParser\HumanDateParser.csproj" -o "artifacts/" -c $(buildConfiguration) /p:BuildNumber=$(Build.BuildNumber)
