@@ -1,0 +1,45 @@
+trigger:
+- master
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET Core'
+  inputs:
+    version: 3.0.100
+    packageType: sdk
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: NuGetToolInstaller@0
+  displayName: 'Install NuGet'
+
+- task: NuGetCommand@2
+  displayName: 'Restore packages'
+  inputs:
+    restoreSolution: '$(solution)'
+
+- task: VSBuild@1
+  displayName: 'Build project'
+  inputs:
+    solution: '$(solution)'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+- script: |
+    dotnet pack "HumanDateParser\HumanDateParser.csproj" -o "artifacts/" -c $(buildConfiguration) /p:BuildNumber=$(Build.BuildNumber)
+  displayName: 'Pack projects'
+
+- task: NuGetCommand@2
+  displayName: 'Push project to NuGet'
+  inputs:
+    command: 'push'
+    packagesToPush: 'artifacts/*.nupkg'
+    nuGetFeedType: 'external'
+    publishFeedCredentials: 'NuGet v3'
