@@ -31,6 +31,12 @@ steps:
   inputs:
     command: 'build'
     projects: 'HumanDateParser\HumanDateParser.csproj'
+    
+- task: DotNetCoreCLI@2
+  displayName: 'Run tests'
+  inputs:
+    command: 'test'
+    projects: 'HumanDateParser.Tests\HumanDateParser.csproj'
 
 - script: |
     dotnet pack "HumanDateParser\HumanDateParser.csproj" -o "artifacts/" -c $(buildConfiguration) /p:BuildNumber=$(Build.BuildNumber)
