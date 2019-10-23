@@ -117,24 +117,49 @@ namespace HumanDateParser
             }
         }
 
-        public static void ReadRelativeDayTime(ref DateTime date, ParseToken valueToken, ParseToken specifierToken)
+        public void ReadRelativeDayTime(ref DateTime date, ParseToken valueToken, ParseToken specifierToken)
         {
-            int hours;
+            var hours = int.Parse(valueToken.Text);
+            var minutes = date.Minute;
+            var seconds = date.Second;
             switch (specifierToken.Kind)
             {
                 case TokenKind.Am:
-                    hours = int.Parse(valueToken.Text);
                     if (hours == 12) hours = 0; // 12 AM == 0000 hours
                     break;
                 case TokenKind.Pm:
-                    hours = int.Parse(valueToken.Text);
                     if (hours != 12) hours += 12; // 12 PM = 1200 hours 
                     break;
-                // todo: Case TokenKind.Colon
+                case TokenKind.Colon:
+                    if (!_tokens.MoveNext()) throw new ParseException(ParseFailReason.NumberExpected, $"Expected a minute specifier to follow after a colon.");
+                    if (!(_tokens.Current is NumberToken num)) throw new ParseException(ParseFailReason.InvalidUnit, $"Expected a number to follow the colon.");
+                    minutes = num.Value;
+
+                    if (_tokens.PeekNext() != null && _tokens.PeekNext().Kind == TokenKind.Colon)
+                    {
+                        _tokens.MoveNext();
+                        if (!_tokens.MoveNext()) throw new ParseException(ParseFailReason.NumberExpected, $"Expected a second specifier to follow the colon.");
+                        if (!(_tokens.Current is NumberToken msNum)) throw new ParseException(ParseFailReason.InvalidUnit, "Expected a number to follow the colon.");
+                        seconds = msNum.Value;
+                    }
+
+                    if (!_tokens.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, "Expected an AM/PM.");
+                    switch (_tokens.Current.Kind)
+                    {
+                        case TokenKind.Am:
+                            if (hours == 12) hours = 0; // 12 AM == 0000 hours
+                            break;
+                        case TokenKind.Pm:
+                            if (hours != 12) hours += 12; // 12 PM = 1200 hours 
+                            break;
+                        default:
+                            throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit {_tokens.Current.Text}, expected AM or PM.");
+                    }
+                    break;
                 default:
-                    throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit {specifierToken.Text}.");
+                    throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit {specifierToken.Text}, expected AM or PM.");
             }
-            date = new DateTime(date.Year, date.Month, date.Day, hours, 00, 00);
+            date = new DateTime(date.Year, date.Month, date.Day, hours, minutes, seconds);
         }
 
         public DetailedParseResult ParseDetailed()
