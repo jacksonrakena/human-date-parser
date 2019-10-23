@@ -8,11 +8,11 @@ namespace HumanDateParser
 {
     internal class Tokeniser
     {
-        public CharacterEnumerator _buffer;
+        public CharacterBuffer _buffer;
 
         public Tokeniser(string text)
         {
-            _buffer = new CharacterEnumerator(text);
+            _buffer = new CharacterBuffer(text);
         }
 
         internal List<Token> Tokenise()
@@ -166,10 +166,11 @@ namespace HumanDateParser
 
         private string ReadString()
         {
+            var isLetter = char.IsLetter((char)_buffer.Current);
             var s = new StringBuilder().Append((char) _buffer.Current);
             while (_buffer.MoveNext())
             {
-                if (IsValidProceduralRead((char)_buffer.Current))
+                if (IsValidProceduralRead((char)_buffer.Current, isLetter))
                     s.Append((char)_buffer.Current);
                 else
                 {
@@ -180,9 +181,12 @@ namespace HumanDateParser
             return s.ToString();
         }
 
-        private static bool IsValidProceduralRead(char current)
+        private static bool IsValidProceduralRead(char current, bool expectedLetter)
         {
-            return char.IsLetter(current) || char.IsNumber(current) || current == '_' || current == '/' || current == '-' || current == '.';
+            bool c;
+            if (expectedLetter) c = char.IsLetter(current);
+            else c = char.IsNumber(current);
+            return c || current == '_' || current == '/' || current == '-' || current == '.';
         }
 
         private NumberToken ReadNumber()

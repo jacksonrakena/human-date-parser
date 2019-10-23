@@ -43,10 +43,8 @@ namespace HumanDateParser
 
         public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, Token numberValueToken, Token specifierTypeToken)
         {
-            var peekToken = _tokens.PeekNext();
-            Console.WriteLine("Number value token: " + numberValueToken.Kind.ToString() + " specifier token: " + specifierTypeToken.Kind.ToString());
             var number = int.Parse(numberValueToken.Text);
-            if (peekToken != null && peekToken.Kind == TokenKind.Ago) number *= -1;
+            if (_tokens.ContainsKind(TokenKind.Ago)) number *= -1;
             baseTime = specifierTypeToken.Kind switch
             {
                 TokenKind.DaySpecifier => baseTime.AddDays(number),

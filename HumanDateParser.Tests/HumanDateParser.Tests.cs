@@ -61,6 +61,15 @@ namespace HumanDateParser.Tests
         }
 
         [TestMethod]
+        public void TestImpliedRelativeAgoTimes_Combined()
+        {
+            var actual = DateTime.Now.AddHours(-2).AddMinutes(-5).AddSeconds(-10);
+            var parsed = HumanDateParser.Parse("2h5m10s ago");
+
+            Assert.AreEqual(actual.ToString(), parsed.ToString());
+        }
+
+        [TestMethod]
         // may 16 = thursday
         // may 9 = thursday
         // may 8 = wednesday

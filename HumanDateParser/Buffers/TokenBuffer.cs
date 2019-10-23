@@ -6,8 +6,10 @@ using System.Text;
 
 namespace HumanDateParser
 {
-    internal class TokenBuffer : Enumerator<Token>
+    internal class TokenBuffer : Buffer<Token>
     {
+        public bool ContainsKind(TokenKind kind) => Any(t => t.Kind == kind);
+
         public TokenBuffer(Tokeniser tokeniser)
         {
             _list = tokeniser.Tokenise();

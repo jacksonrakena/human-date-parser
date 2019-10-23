@@ -2,9 +2,9 @@
 
 namespace HumanDateParser
 {
-    internal class CharacterEnumerator : Enumerator<int>
+    internal class CharacterBuffer : Buffer<int>
     {
-        public CharacterEnumerator(string script)
+        public CharacterBuffer(string script)
         {
             foreach (var ch in script)
             {
