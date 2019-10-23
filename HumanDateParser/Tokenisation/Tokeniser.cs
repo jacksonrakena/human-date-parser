@@ -50,7 +50,7 @@ namespace HumanDateParser
                             var bufPeek3 = _buffer.Peek(3);
                             if (bufPeek2 == '-' || bufPeek2 == '/' || bufPeek3 == '-' || bufPeek3 == '/')
                             {
-                                list.Add(new ParseToken(TokenKind.DateAbsolute, ReadString()));
+                                list.Add(new ParseToken(TokenKind.AbsoluteDate, ReadString()));
                             } else
                             {
                                 list.Add(ReadNumber());
@@ -98,7 +98,7 @@ namespace HumanDateParser
                 case "NOVEMBER":
                 case "DEC":
                 case "DECEMBER":
-                    return new ParseToken(TokenKind.LiteralMonth, identifier);
+                    return new ParseToken(TokenKind.AbsoluteMonth, identifier);
                 case "MONDAY":
                 case "TUESDAY":
                 case "WEDNESDAY":
@@ -106,22 +106,23 @@ namespace HumanDateParser
                 case "FRIDAY":
                 case "SATURDAY":
                 case "SUNDAY":
-                    return new ParseToken(TokenKind.LiteralDay, identifier);
+                    return new ParseToken(TokenKind.AbsoluteDayOfWeek, identifier);
                 case "YEAR":
                 case "YEARS":
-                    return new ParseToken(TokenKind.YearSpecifier, string.Empty);
+                case "Y":
+                    return new ParseToken(TokenKind.Year, string.Empty);
                 case "MONTH":
                 case "MONTHS":
                 case "MO":
-                    return new ParseToken(TokenKind.MonthSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.Month, string.Empty);
                 case "WEEK":
                 case "WEEKS":
                 case "W":
-                    return new ParseToken(TokenKind.WeekSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.Week, string.Empty);
                 case "DAY":
                 case "DAYS":
                 case "D":
-                    return new ParseToken(TokenKind.DaySpecifier, string.Empty);
+                    return new ParseToken(TokenKind.Day, string.Empty);
                 case "NEXT":
                     return new ParseToken(TokenKind.Next, string.Empty);
                 case "LAST":
@@ -134,11 +135,6 @@ namespace HumanDateParser
                     return new ParseToken(TokenKind.Ago, string.Empty);
                 case "IN":
                     return new ParseToken(TokenKind.In, string.Empty);
-                case "TH":
-                case "RD":
-                case "ND":
-                case "ST":
-                    return new ParseToken(TokenKind.MonthRelative, string.Empty);
                 case "AM":
                     return new ParseToken(TokenKind.Am, string.Empty);
                 case "PM":
@@ -149,16 +145,16 @@ namespace HumanDateParser
                 case "SECONDS":
                 case "SECOND":
                 case "SEC":
-                    return new ParseToken(TokenKind.SecondSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.Second, string.Empty);
                 case "M":
                 case "MINUTES":
                 case "MINUTE":
                 case "MIN":
-                    return new ParseToken(TokenKind.MinuteSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.Minute, string.Empty);
                 case "H":
                 case "HOURS":
                 case "HOUR":
-                    return new ParseToken(TokenKind.HourSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.Hour, string.Empty);
                 default:
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Unknown token '{identifier}'.");
             }
