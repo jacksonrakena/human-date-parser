@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using HumanDateParser;
 
@@ -6,64 +8,72 @@ namespace HumanDateParser
 {
     internal class Tokeniser
     {
-        public CharacterBuffer _buffer;
+        public CharacterEnumerator _buffer;
 
-        public Tokeniser(CharacterBuffer charBuffer)
+        public Tokeniser(string text)
         {
-            _buffer = charBuffer;
+            _buffer = new CharacterEnumerator(text);
         }
 
-        internal Token NextToken()
+        internal List<Token> Tokenise()
         {
-            while (true)
+            var list = new List<Token>();
+
+            while (_buffer.MoveNext())
             {
-                switch (_buffer.Peek(1))
+                var current = _buffer.Current;
+
+                switch (current)
                 {
                     case ' ':
-                        _buffer.Next();
                         break;
                     case -1:
-                        return new Token(TokenKind.BufferReadEnd, "end");
+                        list.Add(new Token(TokenKind.End, string.Empty));
+                        return list;
                     case '-':
-                        _buffer.Next();
-                        return new Token(TokenKind.To, "to");
+                        list.Add(new Token(TokenKind.Dash, string.Empty));
+                        break;
                     case ':':
-                        _buffer.Next();
-                        return new Token(TokenKind.Colon, "<:>");
+                        list.Add(new Token(TokenKind.Colon, string.Empty));
+                        break;
                     default:
-                        // words like 'tomorrow'
-                        if (char.IsLetter((char)_buffer.Peek(1))) return ParseNextIdentifier();
-                        // number formats
-                        else if (char.IsNumber((char)_buffer.Peek(1)))
+                        // words
+                        if (char.IsLetter((char)current))
                         {
-                            // date format like 21/10/2019 or 21-10-2019
+                            list.Add(TokeniseNextWord());
+                            break;
+                        }
+                        // date formats like 21/10/2019 or 21-10-2019
+                        else if (char.IsNumber((char)current))
+                        {
                             var bufPeek2 = _buffer.Peek(2);
                             var bufPeek3 = _buffer.Peek(3);
                             if (bufPeek2 == '-' || bufPeek2 == '/' || bufPeek3 == '-' || bufPeek3 == '/')
-                                return new Token(TokenKind.DateAbsolute, ReadIdentifierUntilEnd());
-           
-                            return ReadNumber();
-                        }
-                        else
-                        {
-                            _buffer.Next();
+                            {
+                                list.Add(new Token(TokenKind.DateAbsolute, ReadString()));
+                            } else
+                            {
+                                list.Add(ReadNumber());
+                            }
                         }
                         break;
                 }
             }
+
+            return list;
         }
 
-        private Token ParseNextIdentifier()
+        private Token TokeniseNextWord()
         {
-            var identifier = ReadIdentifierUntilEnd();
-            switch (identifier.ToUpper())
+            var identifier = ReadString().ToUpper();
+            switch (identifier)
             {
                 case "TODAY":
-                    return new Token(TokenKind.Today, "<today>");
+                    return new Token(TokenKind.Today, string.Empty);
                 case "TOMMOROW":
-                    return new Token(TokenKind.Tomorrow, "<tommorow>");
+                    return new Token(TokenKind.Tomorrow, string.Empty);
                 case "YESTERDAY":
-                    return new Token(TokenKind.Yesterday, "<yesterday>");
+                    return new Token(TokenKind.Yesterday, string.Empty);
                 case "JAN":
                 case "JANUARY":
                 case "FEB":
@@ -88,7 +98,7 @@ namespace HumanDateParser
                 case "NOVEMBER":
                 case "DEC":
                 case "DECEMBER":
-                    return new Token(TokenKind.LiteralMonth, identifier.ToUpper());
+                    return new Token(TokenKind.LiteralMonth, identifier);
                 case "MONDAY":
                 case "TUESDAY":
                 case "WEDNESDAY":
@@ -96,69 +106,99 @@ namespace HumanDateParser
                 case "FRIDAY":
                 case "SATURDAY":
                 case "SUNDAY":
-                    return new Token(TokenKind.LiteralDay, identifier.ToUpper());
+                    return new Token(TokenKind.LiteralDay, identifier);
                 case "YEAR":
                 case "YEARS":
-                    return new Token(TokenKind.YearSpecifier, "<year>");
+                    return new Token(TokenKind.YearSpecifier, string.Empty);
                 case "MONTH":
                 case "MONTHS":
-                    return new Token(TokenKind.MonthSpecifier, "<month>");
+                case "MO":
+                    return new Token(TokenKind.MonthSpecifier, string.Empty);
                 case "WEEK":
                 case "WEEKS":
-                    return new Token(TokenKind.WeekSpecifier, "<week>");
+                case "W":
+                    return new Token(TokenKind.WeekSpecifier, string.Empty);
                 case "DAY":
                 case "DAYS":
-                    return new Token(TokenKind.DaySpecifier, "<day>");
+                case "D":
+                    return new Token(TokenKind.DaySpecifier, string.Empty);
                 case "NEXT":
-                    return new Token(TokenKind.Next, "<next>");
+                    return new Token(TokenKind.Next, string.Empty);
                 case "LAST":
-                    return new Token(TokenKind.Last, "<previous>");
+                    return new Token(TokenKind.Last, string.Empty);
                 case "AT":
-                    return new Token(TokenKind.At, "<at>");
+                    return new Token(TokenKind.At, string.Empty);
                 case "TO":
-                    return new Token(TokenKind.To, "<to>");
+                    return new Token(TokenKind.Dash, string.Empty);
                 case "AGO":
-                    return new Token(TokenKind.Ago, "<ago>");
+                    return new Token(TokenKind.Ago, string.Empty);
                 case "IN":
-                    return new Token(TokenKind.In, "<in>");
+                    return new Token(TokenKind.In, string.Empty);
                 case "TH":
                 case "RD":
                 case "ND":
                 case "ST":
-                    return new Token(TokenKind.MonthRelative, "<month_modifier>");
+                    return new Token(TokenKind.MonthRelative, string.Empty);
                 case "AM":
+                    return new Token(TokenKind.Am, string.Empty);
                 case "PM":
-                    return new Token(TokenKind.TimeRelative, identifier.ToUpper());
+                    return new Token(TokenKind.Pm, string.Empty);
                 case "END":
-                    return new Token(TokenKind.BufferReadEnd, "<eof>");
+                    return new Token(TokenKind.End, string.Empty);
+                case "S":
+                case "SECONDS":
+                case "SECOND":
+                case "SEC":
+                    return new Token(TokenKind.SecondSpecifier, string.Empty);
+                case "M":
+                case "MINUTES":
+                case "MINUTE":
+                case "MIN":
+                    return new Token(TokenKind.MinuteSpecifier, string.Empty);
+                case "H":
+                case "HOURS":
+                case "HOUR":
+                    return new Token(TokenKind.HourSpecifier, string.Empty);
                 default:
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Unknown token '{identifier}'.");
             }
         }
 
-        private string ReadIdentifierUntilEnd()
+        private string ReadString()
         {
-            var s = new StringBuilder();
-            while (char.IsLetter((char)_buffer.Peek(1)) || char.IsNumber((char)_buffer.Peek(1)) || (char)_buffer.Peek(1) == '_' || (char)_buffer.Peek(1) == '/' || (char)_buffer.Peek(1) == '-' || (char)_buffer.Peek(1) == '.')
+            var s = new StringBuilder().Append((char) _buffer.Current);
+            while (_buffer.MoveNext())
             {
-                s.Append((char)_buffer.Peek(1));
-                _buffer.Next();
+                if (IsValidProceduralRead((char)_buffer.Current))
+                    s.Append((char)_buffer.Current);
+                else
+                {
+                    _buffer.MoveBack();
+                    break;
+                }
             }
             return s.ToString();
         }
 
-        private Token ReadNumber()
+        private static bool IsValidProceduralRead(char current)
         {
-            var s = new StringBuilder();
-            var c = (char)_buffer.Peek(1);
-            while (char.IsNumber(c) )
+            return char.IsLetter(current) || char.IsNumber(current) || current == '_' || current == '/' || current == '-' || current == '.';
+        }
+
+        private NumberToken ReadNumber()
+        {
+            var s = new StringBuilder().Append((char)_buffer.Current);
+            while (_buffer.MoveNext())
             {
-                s.Append(c);
-                _buffer.Next();
-                c = (char)_buffer.Peek(1);
+                if (char.IsNumber((char)_buffer.Current))
+                    s.Append((char)_buffer.Current);
+                else
+                {
+                    _buffer.MoveBack();
+                    break;
+                }
             }
-            var stemp = s.ToString();
-            return new Token(TokenKind.Number, stemp);
+            return new NumberToken(int.Parse(s.ToString()));
         }
     }
 }

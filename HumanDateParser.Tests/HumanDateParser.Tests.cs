@@ -18,6 +18,17 @@ namespace HumanDateParser.Tests
         }
 
         [TestMethod]
+        [DataRow(1), DataRow(5), DataRow(20)]
+        public void TestImpliedRelativeFutureTimes_Days(int days)
+        {
+            var actual = DateTime.Now.AddDays(days);
+            var parsed = HumanDateParser.Parse($"{days} days");
+
+            Assert.IsNotNull(parsed);
+            Assert.AreEqual(actual.ToString(), parsed.ToString());
+        }
+
+        [TestMethod]
         [DataRow(1), DataRow(2), DataRow(3)]
         public void TestImpliedRelativeFutureTimes_InKind(int months)
         {
@@ -36,6 +47,16 @@ namespace HumanDateParser.Tests
             var parsed = HumanDateParser.Parse($"{monthsAgo} months ago");
 
             Assert.IsNotNull(parsed);
+            Assert.AreEqual(actual.ToString(), parsed.ToString());
+        }
+
+        [TestMethod]
+        [DataRow(5)]
+        public void TestImpliedRelativeFutureTimes_NegativeMinutes(int minutesAgo)
+        {
+            var actual = DateTime.Now.AddMinutes(-1 * minutesAgo);
+            var parsed = HumanDateParser.Parse($"{minutesAgo}m ago");
+
             Assert.AreEqual(actual.ToString(), parsed.ToString());
         }
 
@@ -90,6 +111,16 @@ namespace HumanDateParser.Tests
         public void TestImpliedLastTimes_WeekLiteral()
         {
             Assert.AreEqual(DateTime.Now.AddDays(-7).ToString(), HumanDateParser.Parse("Last week").ToString());
+        }
+
+        [TestMethod]
+        public void TestRelativeTime_PmAm()
+        {
+            var baseTime = new DateTime(2019, 10, 05, 06, 00, 00);
+
+            Assert.AreEqual(new DateTime(2019, 10, 05, 05, 00, 00).ToString(), HumanDateParser.Parse("5 AM", baseTime).ToString());
+            Assert.AreEqual(new DateTime(2019, 10, 05, 16, 00, 00).ToString(), HumanDateParser.Parse("4 PM", baseTime).ToString());
+            Assert.AreEqual(new DateTime(2019, 10, 05, 06, 00, 00).ToString(), HumanDateParser.Parse("06 AM", baseTime).ToString());
         }
     }
 }

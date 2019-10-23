@@ -16,7 +16,7 @@ namespace HumanDateParser
         /// <returns>The provided date, in <see cref="DateTime"/> format.</returns>
         /// <exception cref="ParseException">An exception arises during parsing.</exception>
         public static DateTime Parse(string dateString, DateTime? relativeTo = null)
-            => new Parser(new Tokeniser(new CharacterBuffer(dateString, 3)), relativeTo ?? DateTime.Now).Parse();
+            => new Parser(dateString, relativeTo ?? DateTime.Now).Parse();
     }
 
 }

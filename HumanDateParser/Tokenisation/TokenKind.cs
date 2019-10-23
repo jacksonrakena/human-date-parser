@@ -6,9 +6,13 @@
         MonthSpecifier,
         WeekSpecifier,
         DaySpecifier,
+        HourSpecifier,
+        MinuteSpecifier,
+        SecondSpecifier,
         LiteralMonth,
         MonthRelative,
-        TimeRelative,
+        Am,
+        Pm,
         LiteralDay,
         Today,
         Tomorrow,
@@ -17,11 +21,11 @@
         Number,
         Next,
         Last,
-        To,
+        Dash,
         At,
         Ago,
         Colon,
-        BufferReadEnd,
+        End,
         In
     }
 }

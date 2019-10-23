@@ -3,10 +3,11 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <VersionPrefix>2.0.0</VersionPrefix>
     <VersionPrefix Condition=" '$(BuildNumber)' != '' ">$(VersionPrefix)-$(BuildNumber)</VersionPrefix>
-    <AssemblyName>HumanDateParser</AssemblyName>
+    <AssemblyName>Abyssal.HumanDateParser</AssemblyName>
     <Description>Human-readable date parsing for .NET</Description>
-    <Authors>Abyssal, ti-ka</Authors>
+    <Authors>Abyssal</Authors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Nullable>Enable</Nullable>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 </Project>
