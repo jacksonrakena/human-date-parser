@@ -36,7 +36,7 @@ steps:
   displayName: 'Run tests'
   inputs:
     command: 'test'
-    projects: 'HumanDateParser.Tests\HumanDateParser.csproj'
+    projects: 'HumanDateParser.Tests\HumanDateParser.Tests.csproj'
 
 - script: |
     dotnet pack "HumanDateParser\HumanDateParser.csproj" -o "artifacts/" -c $(buildConfiguration) /p:BuildNumber=$(Build.BuildNumber)
