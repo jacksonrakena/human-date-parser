@@ -1,6 +1,6 @@
 ﻿namespace HumanDateParser
 {
-    internal enum TokenKind
+    public enum TokenKind
     {
         YearSpecifier,
         MonthSpecifier,

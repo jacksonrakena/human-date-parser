@@ -4,7 +4,7 @@ using System.Text;
 
 namespace HumanDateParser
 {
-    internal class NumberToken : Token
+    internal class NumberToken : ParseToken
     {
         public int Value { get; }
 

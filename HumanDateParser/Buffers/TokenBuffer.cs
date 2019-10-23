@@ -6,7 +6,7 @@ using System.Text;
 
 namespace HumanDateParser
 {
-    internal class TokenBuffer : Buffer<Token>
+    internal class TokenBuffer : Buffer<ParseToken>
     {
         public bool ContainsKind(TokenKind kind) => Any(t => t.Kind == kind);
 

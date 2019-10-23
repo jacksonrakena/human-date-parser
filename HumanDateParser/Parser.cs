@@ -41,7 +41,7 @@ namespace HumanDateParser
             _tokens = new TokenBuffer(new Tokeniser(text));
         }
 
-        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, Token numberValueToken, Token specifierTypeToken)
+        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, ParseToken numberValueToken, ParseToken specifierTypeToken)
         {
             var number = int.Parse(numberValueToken.Text);
             if (_tokens.ContainsKind(TokenKind.Ago)) number *= -1;
@@ -58,7 +58,7 @@ namespace HumanDateParser
             };
         }
 
-        public void ReadPreviousTimeUnit(ref DateTime baseTime, Token specifierOrDowUnitToken)
+        public void ReadPreviousTimeUnit(ref DateTime baseTime, ParseToken specifierOrDowUnitToken)
         {
             switch (specifierOrDowUnitToken.Kind)
             {
@@ -101,7 +101,7 @@ namespace HumanDateParser
             }
         }
 
-        public void ReadRelativeDayTime(ref DateTime date, Token valueToken, Token specifierToken)
+        public void ReadRelativeDayTime(ref DateTime date, ParseToken valueToken, ParseToken specifierToken)
         {
             int hours;
             switch (specifierToken.Kind)
@@ -121,6 +121,12 @@ namespace HumanDateParser
 
             if (date.Hour > hours) date = date.AddHours(-1 * (date.Hour - hours));
             if (hours > date.Hour) date = date.AddHours(hours - date.Hour);
+        }
+
+        public DetailedParseResult ParseDetailed()
+        {
+            var result = Parse();
+            return new DetailedParseResult(result, _tokens.All());
         }
 
         public DateTime Parse()

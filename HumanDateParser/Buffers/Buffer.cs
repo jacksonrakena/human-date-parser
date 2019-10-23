@@ -18,6 +18,8 @@ namespace HumanDateParser
 
         public bool Any(Func<T, bool> predicate) => _list.Any(predicate);
 
+        internal List<T> All() => _list;
+
         public T PeekNext() => Peek(1);
 
         public T Peek(int position)

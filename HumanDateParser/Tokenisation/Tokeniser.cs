@@ -15,9 +15,9 @@ namespace HumanDateParser
             _buffer = new CharacterBuffer(text);
         }
 
-        internal List<Token> Tokenise()
+        internal List<ParseToken> Tokenise()
         {
-            var list = new List<Token>();
+            var list = new List<ParseToken>();
 
             while (_buffer.MoveNext())
             {
@@ -28,13 +28,13 @@ namespace HumanDateParser
                     case ' ':
                         break;
                     case -1:
-                        list.Add(new Token(TokenKind.End, string.Empty));
+                        list.Add(new ParseToken(TokenKind.End, string.Empty));
                         return list;
                     case '-':
-                        list.Add(new Token(TokenKind.Dash, string.Empty));
+                        list.Add(new ParseToken(TokenKind.Dash, string.Empty));
                         break;
                     case ':':
-                        list.Add(new Token(TokenKind.Colon, string.Empty));
+                        list.Add(new ParseToken(TokenKind.Colon, string.Empty));
                         break;
                     default:
                         // words
@@ -50,7 +50,7 @@ namespace HumanDateParser
                             var bufPeek3 = _buffer.Peek(3);
                             if (bufPeek2 == '-' || bufPeek2 == '/' || bufPeek3 == '-' || bufPeek3 == '/')
                             {
-                                list.Add(new Token(TokenKind.DateAbsolute, ReadString()));
+                                list.Add(new ParseToken(TokenKind.DateAbsolute, ReadString()));
                             } else
                             {
                                 list.Add(ReadNumber());
@@ -63,17 +63,17 @@ namespace HumanDateParser
             return list;
         }
 
-        private Token TokeniseNextWord()
+        private ParseToken TokeniseNextWord()
         {
             var identifier = ReadString().ToUpper();
             switch (identifier)
             {
                 case "TODAY":
-                    return new Token(TokenKind.Today, string.Empty);
+                    return new ParseToken(TokenKind.Today, string.Empty);
                 case "TOMMOROW":
-                    return new Token(TokenKind.Tomorrow, string.Empty);
+                    return new ParseToken(TokenKind.Tomorrow, string.Empty);
                 case "YESTERDAY":
-                    return new Token(TokenKind.Yesterday, string.Empty);
+                    return new ParseToken(TokenKind.Yesterday, string.Empty);
                 case "JAN":
                 case "JANUARY":
                 case "FEB":
@@ -98,7 +98,7 @@ namespace HumanDateParser
                 case "NOVEMBER":
                 case "DEC":
                 case "DECEMBER":
-                    return new Token(TokenKind.LiteralMonth, identifier);
+                    return new ParseToken(TokenKind.LiteralMonth, identifier);
                 case "MONDAY":
                 case "TUESDAY":
                 case "WEDNESDAY":
@@ -106,59 +106,59 @@ namespace HumanDateParser
                 case "FRIDAY":
                 case "SATURDAY":
                 case "SUNDAY":
-                    return new Token(TokenKind.LiteralDay, identifier);
+                    return new ParseToken(TokenKind.LiteralDay, identifier);
                 case "YEAR":
                 case "YEARS":
-                    return new Token(TokenKind.YearSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.YearSpecifier, string.Empty);
                 case "MONTH":
                 case "MONTHS":
                 case "MO":
-                    return new Token(TokenKind.MonthSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.MonthSpecifier, string.Empty);
                 case "WEEK":
                 case "WEEKS":
                 case "W":
-                    return new Token(TokenKind.WeekSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.WeekSpecifier, string.Empty);
                 case "DAY":
                 case "DAYS":
                 case "D":
-                    return new Token(TokenKind.DaySpecifier, string.Empty);
+                    return new ParseToken(TokenKind.DaySpecifier, string.Empty);
                 case "NEXT":
-                    return new Token(TokenKind.Next, string.Empty);
+                    return new ParseToken(TokenKind.Next, string.Empty);
                 case "LAST":
-                    return new Token(TokenKind.Last, string.Empty);
+                    return new ParseToken(TokenKind.Last, string.Empty);
                 case "AT":
-                    return new Token(TokenKind.At, string.Empty);
+                    return new ParseToken(TokenKind.At, string.Empty);
                 case "TO":
-                    return new Token(TokenKind.Dash, string.Empty);
+                    return new ParseToken(TokenKind.Dash, string.Empty);
                 case "AGO":
-                    return new Token(TokenKind.Ago, string.Empty);
+                    return new ParseToken(TokenKind.Ago, string.Empty);
                 case "IN":
-                    return new Token(TokenKind.In, string.Empty);
+                    return new ParseToken(TokenKind.In, string.Empty);
                 case "TH":
                 case "RD":
                 case "ND":
                 case "ST":
-                    return new Token(TokenKind.MonthRelative, string.Empty);
+                    return new ParseToken(TokenKind.MonthRelative, string.Empty);
                 case "AM":
-                    return new Token(TokenKind.Am, string.Empty);
+                    return new ParseToken(TokenKind.Am, string.Empty);
                 case "PM":
-                    return new Token(TokenKind.Pm, string.Empty);
+                    return new ParseToken(TokenKind.Pm, string.Empty);
                 case "END":
-                    return new Token(TokenKind.End, string.Empty);
+                    return new ParseToken(TokenKind.End, string.Empty);
                 case "S":
                 case "SECONDS":
                 case "SECOND":
                 case "SEC":
-                    return new Token(TokenKind.SecondSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.SecondSpecifier, string.Empty);
                 case "M":
                 case "MINUTES":
                 case "MINUTE":
                 case "MIN":
-                    return new Token(TokenKind.MinuteSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.MinuteSpecifier, string.Empty);
                 case "H":
                 case "HOURS":
                 case "HOUR":
-                    return new Token(TokenKind.HourSpecifier, string.Empty);
+                    return new ParseToken(TokenKind.HourSpecifier, string.Empty);
                 default:
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Unknown token '{identifier}'.");
             }
