@@ -1,23 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using HumanDateParser;
 
 namespace HumanDateParser
 {
-    internal class Tokeniser
+    internal class Tokeniser : Buffer<ParseToken>, IDisposable
     {
         public CharacterBuffer _buffer;
+
+        public bool ContainsKind(TokenKind kind) => _list.Any(t => t.Kind == kind);
 
         public Tokeniser(string text)
         {
             _buffer = new CharacterBuffer(text);
-        }
-
-        internal List<ParseToken> Tokenise()
-        {
-            var list = new List<ParseToken>();
 
             while (_buffer.MoveNext())
             {
@@ -28,19 +26,19 @@ namespace HumanDateParser
                     case ' ':
                         break;
                     case -1:
-                        list.Add(new ParseToken(TokenKind.End, string.Empty));
-                        return list;
+                        _list.Add(new ParseToken(TokenKind.End, string.Empty));
+                        return;
                     case '-':
-                        list.Add(new ParseToken(TokenKind.Dash, string.Empty));
+                        _list.Add(new ParseToken(TokenKind.Dash, string.Empty));
                         break;
                     case ':':
-                        list.Add(new ParseToken(TokenKind.Colon, string.Empty));
+                        _list.Add(new ParseToken(TokenKind.Colon, string.Empty));
                         break;
                     default:
                         // words
                         if (char.IsLetter((char)current))
                         {
-                            list.Add(TokeniseNextWord());
+                            _list.Add(TokeniseNextWord());
                             break;
                         }
                         // date formats like 21/10/2019 or 21-10-2019
@@ -50,17 +48,17 @@ namespace HumanDateParser
                             var bufPeek3 = _buffer.Peek(3);
                             if (bufPeek2 == '-' || bufPeek2 == '/' || bufPeek3 == '-' || bufPeek3 == '/')
                             {
-                                list.Add(new ParseToken(TokenKind.AbsoluteDate, ReadString()));
+                                _list.Add(new ParseToken(TokenKind.AbsoluteDate, ReadString()));
                             } else
                             {
-                                list.Add(ReadNumber());
+                                _list.Add(ReadNumber());
                             }
                         }
                         break;
                 }
             }
 
-            return list;
+            return;
         }
 
         private ParseToken TokeniseNextWord()
@@ -201,6 +199,13 @@ namespace HumanDateParser
                 }
             }
             return new NumberToken(int.Parse(s.ToString()));
+        }
+
+        public override void Dispose()
+        {
+            _buffer.Dispose();
+            _list.Clear();
+
         }
     }
 }

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace HumanDateParser
 {
-    internal class Buffer<T> : IEnumerator<T>
+    internal abstract class Buffer<T> : IEnumerator<T>, IEnumerable<T>
     {
         private int _position = -1;
         protected List<T> _list = new List<T>();
@@ -15,8 +15,6 @@ namespace HumanDateParser
         public T Current => _list[_position];
 
         object IEnumerator.Current => Current;
-
-        public bool Any(Func<T, bool> predicate) => _list.Any(predicate);
 
         internal List<T> All() => _list;
 
@@ -44,8 +42,12 @@ namespace HumanDateParser
             _position = -1;
         }
 
-        public void Dispose()
+        public IEnumerator<T> GetEnumerator()
         {
+            return this;
         }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        public abstract void Dispose();
     }
 }

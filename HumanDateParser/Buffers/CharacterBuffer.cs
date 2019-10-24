@@ -11,5 +11,9 @@ namespace HumanDateParser
                 _list.Add(ch);
             }
         }
+
+        public override void Dispose()
+        {
+        }
     }
 }
