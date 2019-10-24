@@ -45,6 +45,11 @@ namespace HumanDateParser
         /// <summary>
         ///     A number was expected, but none was provided.
         /// </summary>
-        NumberExpected
+        NumberExpected,
+
+        /// <summary>
+        ///     An internal error occurred.
+        /// </summary>
+        Internal
     }
 }

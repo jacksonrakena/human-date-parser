@@ -5,47 +5,20 @@ namespace HumanDateParser
 {
     internal class Parser
     {
-        private readonly Dictionary<string, int> _months = new Dictionary<string, int>();
-
         private readonly DateTime _baseTime;
         private readonly Tokeniser _tokeniser;
 
         public Parser(string text, DateTime relativeTo)
         {
             _baseTime = relativeTo;
-            _months.Add("JAN", 1);
-            _months.Add("FEB", 2);
-            _months.Add("MAR", 3);
-            _months.Add("APR", 4);
-            _months.Add("MAY", 5);
-            _months.Add("JUN", 6);
-            _months.Add("JUL", 7);
-            _months.Add("AUG", 8);
-            _months.Add("SEPT", 9);
-            _months.Add("OCT", 10);
-            _months.Add("NOV", 11);
-            _months.Add("DEC", 12);
-
-            _months.Add("JANUARY", 1);
-            _months.Add("FEBUARY", 2);
-            _months.Add("MARCH", 3);
-            _months.Add("APRIL", 4);
-            _months.Add("JUNE", 6);
-            _months.Add("JULY", 7);
-            _months.Add("AUGUST", 8);
-            _months.Add("SEPTEMBER", 9);
-            _months.Add("OCTOBER", 10);
-            _months.Add("NOVEMBER", 11);
-            _months.Add("DECEMBER", 12);
-
             _tokeniser = new Tokeniser(text);
         }
 
-        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, ParseToken numberValueToken, TimeUnitToken specifierTypeToken)
+        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, NumberToken num, TimeUnitToken units)
         {
-            var number = int.Parse(numberValueToken.Text);
-            if (_tokeniser.ContainsKind(TokenKind.Ago)) number *= -1;
-            baseTime = specifierTypeToken.Unit switch
+            var number = num.Value;
+            if (_tokeniser.ContainsToken<RelativeToken>(c => c.RelativeType == RelativeType.Ago)) number *= -1;
+            baseTime = units.Unit switch
             {
                 TimeUnit.Day => baseTime.AddDays(number),
                 TimeUnit.Month => baseTime.AddMonths(number),
@@ -54,32 +27,34 @@ namespace HumanDateParser
                 TimeUnit.Minute => baseTime.AddMinutes(number),
                 TimeUnit.Second => baseTime.AddSeconds(number),
                 TimeUnit.Hour => baseTime.AddHours(number),
-                _ => throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit following '{numberValueToken.Text}'.")
+                TimeUnit.Millisecond => baseTime.AddMilliseconds(number),
+                _ => throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit following '{num.Value}'.")
             };
         }
 
-        public void ReadRelativeDateUnit(bool isFuture, ref DateTime baseTime, ParseToken specifierOrDowUnitToken)
+        public void ReadRelativeDateUnit(bool isFuture, ref DateTime baseTime, IParseToken specifierOrDowUnitToken)
         {
             switch (specifierOrDowUnitToken)
             {
                 case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Year:
                     baseTime = baseTime.AddYears(isFuture ? 1 : -1);
                     break;
+
                 case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Month:
                     baseTime = baseTime.AddMonths(isFuture ? 1 : -1);
                     break;
+
                 case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Week:
                     baseTime = baseTime.AddDays(isFuture ? 7 : -7);
                     break;
+
                 case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Day:
                     baseTime = baseTime.AddDays(isFuture ? 1 : -1);
                     break;
-            }
-            switch (specifierOrDowUnitToken.Kind)
-            {
-                case TokenKind.AbsoluteMonth:
+
+                case LiteralMonthToken literalMonthToken:
                     var curMonth = baseTime.Month;
-                    var newMonth = _months[specifierOrDowUnitToken.Text.ToUpper()];
+                    var newMonth = (int) literalMonthToken.Month;
                     if (isFuture)
                     {
                         if (curMonth == newMonth) baseTime = baseTime.AddYears(1);
@@ -93,9 +68,9 @@ namespace HumanDateParser
                         else baseTime = baseTime.AddMonths(-12 + newMonth - curMonth);
                     }
                     break;
-                case TokenKind.AbsoluteDayOfWeek:
-                    if (!Enum.TryParse<DayOfWeek>(specifierOrDowUnitToken.Text, true, out var day))
-                        throw new ParseException(ParseFailReason.InvalidDayOfWeek, $"{specifierOrDowUnitToken.Text} is not a valid day of the week.");
+
+                case LiteralDayOfWeekToken literalDayToken:
+                    var day = literalDayToken.DayOfWeek;
 
                     var origBaseTimeDays = baseTime.Date.DayOfYear;
                     if (day == baseTime.DayOfWeek) baseTime = baseTime.AddDays(isFuture ? 7 : -7);
@@ -106,38 +81,38 @@ namespace HumanDateParser
                         if (day > baseTime.DayOfWeek)
                         {
                             baseTime = baseTime.AddDays(day - baseTime.DayOfWeek);
-                        } else
+                        }
+                        else
                         {
                             baseTime = baseTime.AddDays(-1 * (baseTime.DayOfWeek - day));
                             if (isFuture && (baseTime.Date.DayOfYear - origBaseTimeDays) < 7) baseTime = baseTime.AddDays(7);
                         }
                     }
                     break;
-
                 default:
-                    throw new ParseException(ParseFailReason.InvalidUnit, $"'Last {specifierOrDowUnitToken.Text}' is not a valid relative date.");
+                    throw new ParseException(ParseFailReason.InvalidUnit, $"{specifierOrDowUnitToken.GetType().Name} is not a valid unit type.");
             }
         }
 
-        public void ReadRelativeDayTime(ref DateTime date, ParseToken valueToken, ParseToken specifierToken)
+        public void ReadRelativeDayTime(ref DateTime date, NumberToken firstNumberToken, TriviaToken specifierToken)
         {
-            var hours = int.Parse(valueToken.Text);
+            var hours = firstNumberToken.Value;
             var minutes = date.Minute;
             var seconds = date.Second;
-            switch (specifierToken.Kind)
+            switch (specifierToken.TriviaType)
             {
-                case TokenKind.Am:
+                case TriviaType.Am:
                     if (hours == 12) hours = 0; // 12 AM == 0000 hours
                     break;
-                case TokenKind.Pm:
+                case TriviaType.Pm:
                     if (hours != 12) hours += 12; // 12 PM = 1200 hours 
                     break;
-                case TokenKind.Colon:
+                case TriviaType.Colon:
                     if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.NumberExpected, $"Expected a minute specifier to follow after a colon.");
                     if (!(_tokeniser.Current is NumberToken num)) throw new ParseException(ParseFailReason.InvalidUnit, $"Expected a number to follow the colon.");
                     minutes = num.Value;
 
-                    if (_tokeniser.PeekNext() != null && _tokeniser.PeekNext().Kind == TokenKind.Colon)
+                    if (_tokeniser.PeekNext() == null || !(_tokeniser.PeekNext() is TriviaToken t) || t.TriviaType != TriviaType.Colon)
                     {
                         _tokeniser.MoveNext();
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.NumberExpected, $"Expected a second specifier to follow the colon.");
@@ -145,21 +120,22 @@ namespace HumanDateParser
                         seconds = msNum.Value;
                     }
 
-                    if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, "Expected an AM/PM.");
-                    switch (_tokeniser.Current.Kind)
+                    if (!_tokeniser.MoveNext() || !(_tokeniser.Current is TriviaToken t0) )
+                        throw new ParseException(ParseFailReason.UnitExpected, "Expected an AM or PM specifier.");
+                    switch (t0.TriviaType)
                     {
-                        case TokenKind.Am:
+                        case TriviaType.Am:
                             if (hours == 12) hours = 0; // 12 AM == 0000 hours
                             break;
-                        case TokenKind.Pm:
+                        case TriviaType.Pm:
                             if (hours != 12) hours += 12; // 12 PM = 1200 hours 
                             break;
                         default:
-                            throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit {_tokeniser.Current.Text}, expected AM or PM.");
+                            throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit '{t0.TriviaType.ToString()}', expected AM or PM.");
                     }
                     break;
                 default:
-                    throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit {specifierToken.Text}, expected AM or PM.");
+                    throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit '{specifierToken.TriviaType.ToString()}', expected AM or PM.");
             }
             date = new DateTime(date.Year, date.Month, date.Day, hours, minutes, seconds);
         }
@@ -177,57 +153,49 @@ namespace HumanDateParser
             while (_tokeniser.MoveNext())
             {
                 var currentToken = _tokeniser.Current;
-                switch (currentToken.Kind)
+                switch (currentToken)
                 {
-                    case TokenKind.In:
-                        if (!_tokeniser.MoveNext() || _tokeniser.Current.Kind != TokenKind.Number) throw new ParseException(ParseFailReason.NumberExpected, "Expected a number to come after 'in'.");
-                        var numToken = _tokeniser.Current;
-                        if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have number without units following.");
-                        ReadImpliedRelativeTimeSpan(ref date, numToken, _tokeniser.Current);
+                    case TriviaToken trivia when trivia.TriviaType == TriviaType.In:
+                        if (!_tokeniser.MoveNext() || !(_tokeniser.Current is NumberToken n)) throw new ParseException(ParseFailReason.NumberExpected, "Expected a number to come after 'in'.");
+                        if (!_tokeniser.MoveNext() || !(_tokeniser.Current is TimeUnitToken tu)) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have number without units following.");
+                        ReadImpliedRelativeTimeSpan(ref date, n, tu);
                         break;
-                    case TokenKind.Number:
+                    case TriviaToken trivia when trivia.TriviaType == TriviaType.At:
+                        if (!_tokeniser.MoveNext() || !(_tokeniser.Current is NumberToken atTriviaNumber)) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'at' without a time following.");
+                        if (!_tokeniser.MoveNext() || !(_tokeniser.Current is TriviaToken triviaToken)) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'at {atTriviaNumber.Value}' without an AM, PM, or colon following.");
+                        ReadRelativeDayTime(ref date, atTriviaNumber, triviaToken);
+                        break;
+                    case NumberToken numberToken:
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have number without units following.");
-                        switch (_tokeniser.Current.Kind)
+                        switch (_tokeniser.Current)
                         {
-                            case TokenKind.Day:
-                            case TokenKind.Hour:
-                            case TokenKind.Minute:
-                            case TokenKind.Second:
-                            case TokenKind.Week:
-                            case TokenKind.Year:
-                            case TokenKind.Month:
-                                ReadImpliedRelativeTimeSpan(ref date, currentToken, _tokeniser.Current);
+                            case TimeUnitToken timeUnitToken:
+                                ReadImpliedRelativeTimeSpan(ref date, numberToken, timeUnitToken);
                                 break;
-                            case TokenKind.Am:
-                            case TokenKind.Pm:
-                            case TokenKind.Colon:
-                                ReadRelativeDayTime(ref date, currentToken, _tokeniser.Current);
+                            case TriviaToken trivia when trivia.TriviaType == TriviaType.Am || trivia.TriviaType == TriviaType.Pm || trivia.TriviaType == TriviaType.Colon:
+                                ReadRelativeDayTime(ref date, numberToken, trivia);
                                 break;
-
+                            default:
+                                throw new ParseException(ParseFailReason.InvalidUnit, $"Expected AM, PM, a colon, or a time unit. Received {_tokeniser.Current.GetType().Name}.");
                         }
                         break;
-                    case TokenKind.Last:
+                    case RelativeToken relativeToken when relativeToken.RelativeType == RelativeType.Last:
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'last' without day of week, or specifier unit following.");
                         ReadRelativeDateUnit(false, ref date, _tokeniser.Current);
                         break;
-                    case TokenKind.Today:
+                    case TodayToken _:
                         break;
-                    case TokenKind.Tomorrow:
+                    case TomorrowToken _:
                         date = date.AddDays(1);
                         break;
-                    case TokenKind.Yesterday:
+                    case YesterdayToken _:
                         date = date.AddDays(-1);
                         break;
-                    case TokenKind.Next:
+                    case RelativeToken relativeToken when relativeToken.RelativeType == RelativeType.Next:
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'next' without day of week, or specifier unit following.");
                         ReadRelativeDateUnit(true, ref date, _tokeniser.Current);
                         break;
-                    case TokenKind.At:
-                        if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'at' without a time following.");
-                        var numericalValue = _tokeniser.Current;
-                        if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'at {numericalValue.Text}' without a time unit following.");
-                        ReadRelativeDayTime(ref date, numericalValue, _tokeniser.Current);
-                        break;
+
                 }
             }
             return date;

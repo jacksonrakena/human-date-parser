@@ -45,9 +45,9 @@ namespace HumanDateParser
         /// <summary>
         ///     The tokens used to construct this result.
         /// </summary>
-        public List<ParseToken> Tokens { get; }
+        public List<IParseToken> Tokens { get; }
 
-        internal DetailedParseResult(DateTime result, List<ParseToken> tokens)
+        internal DetailedParseResult(DateTime result, List<IParseToken> tokens)
         {
             Result = result;
             Tokens = tokens;

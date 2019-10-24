@@ -7,11 +7,12 @@ using HumanDateParser;
 
 namespace HumanDateParser
 {
-    internal class Tokeniser : BufferStream<ParseToken>, IDisposable
+    internal class Tokeniser : BufferStream<IParseToken>, IDisposable
     {
         public CharacterBufferStream _buffer;
 
-        public bool ContainsKind(TokenKind kind) => _list.Any(t => t.Kind == kind);
+        public bool ContainsToken<TTokenType>() where TTokenType : IParseToken => _list.Any(c => c is TTokenType);
+        public bool ContainsToken<TTokenType>(Predicate<TTokenType> predicate) where TTokenType : IParseToken => _list.Any(c => c is TTokenType t && predicate(t));
 
         public Tokeniser(string text)
         {
@@ -26,13 +27,13 @@ namespace HumanDateParser
                     case ' ':
                         break;
                     case -1:
-                        _list.Add(new ParseToken(TokenKind.End, string.Empty));
+                        _list.Add(new EndToken());
                         return;
                     case '-':
-                        _list.Add(new ParseToken(TokenKind.Dash, string.Empty));
+                        _list.Add(new TriviaToken(TriviaType.Dash));
                         break;
                     case ':':
-                        _list.Add(new ParseToken(TokenKind.Colon, string.Empty));
+                        _list.Add(new TriviaToken(TriviaType.Colon));
                         break;
                     default:
                         // words
@@ -48,7 +49,9 @@ namespace HumanDateParser
                             var bufPeek3 = _buffer.Peek(3);
                             if (bufPeek2 == '-' || bufPeek2 == '/' || bufPeek3 == '-' || bufPeek3 == '/')
                             {
-                                _list.Add(new ParseToken(TokenKind.AbsoluteDate, ReadString()));
+                                var str = ReadString();
+                                if (!DateTime.TryParse(str, out var dt)) throw new ParseException(ParseFailReason.InvalidUnit, $"{str} is not a valid date.");
+                                _list.Add(new DateToken(dt));
                             } else
                             {
                                 _list.Add(ReadNumber());
@@ -61,98 +64,76 @@ namespace HumanDateParser
             return;
         }
 
-        private ParseToken TokeniseNextWord()
+        private IParseToken TokeniseNextWord()
         {
             var identifier = ReadString().ToUpper();
+
+            var dayOfWeek = LiteralDayOfWeekToken.ParseDayOfWeek(identifier);
+            if (dayOfWeek != null) return new LiteralDayOfWeekToken(dayOfWeek.Value);
+
+            var literalMonth = LiteralMonthToken.ParseMonth(identifier);
+            if (literalMonth != null) return new LiteralMonthToken(literalMonth.Value);
+
             switch (identifier)
             {
                 case "TODAY":
-                    return new ParseToken(TokenKind.Today, string.Empty);
+                    return new TodayToken();
                 case "TOMMOROW":
-                    return new ParseToken(TokenKind.Tomorrow, string.Empty);
+                    return new TomorrowToken();
                 case "YESTERDAY":
-                    return new ParseToken(TokenKind.Yesterday, string.Empty);
-                case "JAN":
-                case "JANUARY":
-                case "FEB":
-                case "FEBUARY":
-                case "MAR":
-                case "MARCH":
-                case "APR":
-                case "APRIL":
-                case "MAY":
-                case "JUN":
-                case "JUNE":
-                case "JUL":
-                case "JULY":
-                case "AUG":
-                case "AUGUST":
-                case "SEPT":
-                case "SEP":
-                case "SEPTEMBER":
-                case "OCT":
-                case "OCTOBER":
-                case "NOV":
-                case "NOVEMBER":
-                case "DEC":
-                case "DECEMBER":
-                    return new ParseToken(TokenKind.AbsoluteMonth, identifier);
-                case "MONDAY":
-                case "TUESDAY":
-                case "WEDNESDAY":
-                case "THURSDAY":
-                case "FRIDAY":
-                case "SATURDAY":
-                case "SUNDAY":
-                    return new ParseToken(TokenKind.AbsoluteDayOfWeek, identifier);
+                    return new YesterdayToken();
                 case "YEAR":
                 case "YEARS":
                 case "Y":
-                    return new ParseToken(TokenKind.Year, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Year);
                 case "MONTH":
                 case "MONTHS":
                 case "MO":
-                    return new ParseToken(TokenKind.Month, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Month);
                 case "WEEK":
                 case "WEEKS":
                 case "W":
-                    return new ParseToken(TokenKind.Week, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Week);
                 case "DAY":
                 case "DAYS":
                 case "D":
-                    return new ParseToken(TokenKind.Day, string.Empty);
-                case "NEXT":
-                    return new ParseToken(TokenKind.Next, string.Empty);
-                case "LAST":
-                    return new ParseToken(TokenKind.Last, string.Empty);
-                case "AT":
-                    return new ParseToken(TokenKind.At, string.Empty);
-                case "TO":
-                    return new ParseToken(TokenKind.Dash, string.Empty);
-                case "AGO":
-                    return new ParseToken(TokenKind.Ago, string.Empty);
-                case "IN":
-                    return new ParseToken(TokenKind.In, string.Empty);
-                case "AM":
-                    return new ParseToken(TokenKind.Am, string.Empty);
-                case "PM":
-                    return new ParseToken(TokenKind.Pm, string.Empty);
-                case "END":
-                    return new ParseToken(TokenKind.End, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Day);
                 case "S":
                 case "SECONDS":
                 case "SECOND":
                 case "SEC":
-                    return new ParseToken(TokenKind.Second, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Second);
                 case "M":
                 case "MINUTES":
                 case "MINUTE":
                 case "MIN":
-                    return new ParseToken(TokenKind.Minute, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Minute);
                 case "H":
                 case "HOURS":
                 case "HOUR":
-                    return new ParseToken(TokenKind.Hour, string.Empty);
+                    return new TimeUnitToken(TimeUnit.Hour);
+                case "MS":
+                case "MILLISEC":
+                case "MILLISECONDS":
+                    return new TimeUnitToken(TimeUnit.Millisecond);
+                case "NEXT":
+                    return new RelativeToken(RelativeType.Next);
+                case "LAST":
+                    return new RelativeToken(RelativeType.Last);
+                case "AGO":
+                    return new RelativeToken(RelativeType.Ago);
+                case "AT":
+                    return new TriviaToken(TriviaType.At);
+                case "TO":
+                    return new TriviaToken(TriviaType.To);
+                case "IN":
+                    return new TriviaToken(TriviaType.In);
+                case "AM":
+                    return new TriviaToken(TriviaType.Am);
+                case "PM":
+                    return new TriviaToken(TriviaType.Pm);
+                case "END":
+                    return new EndToken();
                 case "A":
                     return new NumberToken(1);
                 default:

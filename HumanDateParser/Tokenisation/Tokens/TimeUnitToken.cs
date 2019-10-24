@@ -4,11 +4,11 @@ using System.Text;
 
 namespace HumanDateParser
 {
-    internal class TimeUnitToken : ParseToken
+    internal class TimeUnitToken : IParseToken
     {
         public TimeUnit Unit { get; }
 
-        internal TimeUnitToken(TimeUnit unit) : base(TokenKind.Unit, string.Empty)
+        internal TimeUnitToken(TimeUnit unit)
         {
             Unit = unit;
         }
