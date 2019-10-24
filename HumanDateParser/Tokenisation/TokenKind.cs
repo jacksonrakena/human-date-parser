@@ -6,39 +6,9 @@
     public enum TokenKind
     {
         /// <summary>
-        ///     "y", "year", or "years".
+        ///     A <see cref="TimeUnit"/>, like month, year, or day.
         /// </summary>
-        Year,
-
-        /// <summary>
-        ///     "mo", "month", or "months".
-        /// </summary>
-        Month,
-
-        /// <summary>
-        ///     "w", "week", or "weeks".
-        /// </summary>
-        Week,
-
-        /// <summary>
-        ///     "d", "day", or "days".
-        /// </summary>
-        Day,
-
-        /// <summary>
-        ///     "h", "hour", or "hours".
-        /// </summary>
-        Hour,
-
-        /// <summary>
-        ///     "m", "min", "minute", or "minutes".
-        /// </summary>
-        Minute,
-
-        /// <summary>
-        ///     "s", "sec", "second", or "seconds".
-        /// </summary>
-        Second,
+        Unit,
 
         /// <summary>
         ///     An absolute month, like January or February.

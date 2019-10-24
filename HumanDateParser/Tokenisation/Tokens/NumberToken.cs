@@ -4,11 +4,11 @@ using System.Text;
 
 namespace HumanDateParser
 {
-    internal class NumberToken : ParseToken
+    internal class NumberToken : IParseToken
     {
         public int Value { get; }
 
-        public NumberToken(int value) : base(TokenKind.Number, value.ToString())
+        public NumberToken(int value)
         {
             Value = value;
         }
