@@ -41,40 +41,42 @@ namespace HumanDateParser
             _tokeniser = new Tokeniser(text);
         }
 
-        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, ParseToken numberValueToken, ParseToken specifierTypeToken)
+        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, ParseToken numberValueToken, TimeUnitToken specifierTypeToken)
         {
             var number = int.Parse(numberValueToken.Text);
             if (_tokeniser.ContainsKind(TokenKind.Ago)) number *= -1;
-            baseTime = specifierTypeToken.Kind switch
+            baseTime = specifierTypeToken.Unit switch
             {
-                TokenKind.Day => baseTime.AddDays(number),
-                TokenKind.Month => baseTime.AddMonths(number),
-                TokenKind.Week => baseTime.AddDays(7 * number),
-                TokenKind.Year => baseTime.AddYears(number),
-                TokenKind.Minute => baseTime.AddMinutes(number),
-                TokenKind.Second => baseTime.AddSeconds(number),
-                TokenKind.Hour => baseTime.AddHours(number),
+                TimeUnit.Day => baseTime.AddDays(number),
+                TimeUnit.Month => baseTime.AddMonths(number),
+                TimeUnit.Week => baseTime.AddDays(7 * number),
+                TimeUnit.Year => baseTime.AddYears(number),
+                TimeUnit.Minute => baseTime.AddMinutes(number),
+                TimeUnit.Second => baseTime.AddSeconds(number),
+                TimeUnit.Hour => baseTime.AddHours(number),
                 _ => throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit following '{numberValueToken.Text}'.")
             };
         }
 
         public void ReadRelativeDateUnit(bool isFuture, ref DateTime baseTime, ParseToken specifierOrDowUnitToken)
         {
-            switch (specifierOrDowUnitToken.Kind)
+            switch (specifierOrDowUnitToken)
             {
-                case TokenKind.Year:
+                case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Year:
                     baseTime = baseTime.AddYears(isFuture ? 1 : -1);
                     break;
-                case TokenKind.Month:
+                case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Month:
                     baseTime = baseTime.AddMonths(isFuture ? 1 : -1);
                     break;
-                case TokenKind.Week:
+                case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Week:
                     baseTime = baseTime.AddDays(isFuture ? 7 : -7);
                     break;
-                case TokenKind.Day:
-                    // this is literally 'last day/next day'
+                case TimeUnitToken timeUnitToken when timeUnitToken.Unit == TimeUnit.Day:
                     baseTime = baseTime.AddDays(isFuture ? 1 : -1);
                     break;
+            }
+            switch (specifierOrDowUnitToken.Kind)
+            {
                 case TokenKind.AbsoluteMonth:
                     var curMonth = baseTime.Month;
                     var newMonth = _months[specifierOrDowUnitToken.Text.ToUpper()];

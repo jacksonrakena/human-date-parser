@@ -7,15 +7,15 @@ using HumanDateParser;
 
 namespace HumanDateParser
 {
-    internal class Tokeniser : Buffer<ParseToken>, IDisposable
+    internal class Tokeniser : BufferStream<ParseToken>, IDisposable
     {
-        public CharacterBuffer _buffer;
+        public CharacterBufferStream _buffer;
 
         public bool ContainsKind(TokenKind kind) => _list.Any(t => t.Kind == kind);
 
         public Tokeniser(string text)
         {
-            _buffer = new CharacterBuffer(text);
+            _buffer = new CharacterBufferStream(text);
 
             while (_buffer.MoveNext())
             {
@@ -205,7 +205,6 @@ namespace HumanDateParser
         {
             _buffer.Dispose();
             _list.Clear();
-
         }
     }
 }
