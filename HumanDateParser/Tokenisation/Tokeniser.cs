@@ -181,7 +181,8 @@ namespace HumanDateParser
                     break;
                 }
             }
-            return new NumberToken(int.Parse(s.ToString()));
+            if (!int.TryParse(s.ToString(), out var i)) throw new ParseException(ParseFailReason.InvalidUnit, $"The provided number was not a valid integer.");
+            return new NumberToken(i);
         }
 
         public override void Dispose()

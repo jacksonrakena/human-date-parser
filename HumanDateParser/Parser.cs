@@ -18,18 +18,24 @@ namespace HumanDateParser
         {
             var number = num.Value;
             if (_tokeniser.ContainsToken<RelativeToken>(c => c.RelativeType == RelativeType.Ago)) number *= -1;
-            baseTime = units.Unit switch
+            try
             {
-                TimeUnit.Day => baseTime.AddDays(number),
-                TimeUnit.Month => baseTime.AddMonths(number),
-                TimeUnit.Week => baseTime.AddDays(7 * number),
-                TimeUnit.Year => baseTime.AddYears(number),
-                TimeUnit.Minute => baseTime.AddMinutes(number),
-                TimeUnit.Second => baseTime.AddSeconds(number),
-                TimeUnit.Hour => baseTime.AddHours(number),
-                TimeUnit.Millisecond => baseTime.AddMilliseconds(number),
-                _ => throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit following '{num.Value}'.")
-            };
+                baseTime = units.Unit switch
+                {
+                    TimeUnit.Day => baseTime.AddDays(number),
+                    TimeUnit.Month => baseTime.AddMonths(number),
+                    TimeUnit.Week => baseTime.AddDays(7 * number),
+                    TimeUnit.Year => baseTime.AddYears(number),
+                    TimeUnit.Minute => baseTime.AddMinutes(number),
+                    TimeUnit.Second => baseTime.AddSeconds(number),
+                    TimeUnit.Hour => baseTime.AddHours(number),
+                    TimeUnit.Millisecond => baseTime.AddMilliseconds(number),
+                    _ => throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit following '{num.Value}'.")
+                };
+            } catch (ArgumentOutOfRangeException)
+            {
+                throw new ParseException(ParseFailReason.InvalidUnit, "Cannot add that much time to the current date.");
+            }
         }
 
         public void ReadRelativeDateUnit(bool isFuture, ref DateTime baseTime, IParseToken specifierOrDowUnitToken)
