@@ -112,7 +112,7 @@ namespace HumanDateParser
                     if (!(_tokeniser.Current is NumberToken num)) throw new ParseException(ParseFailReason.InvalidUnit, $"Expected a number to follow the colon.");
                     minutes = num.Value;
 
-                    if (_tokeniser.PeekNext() == null || !(_tokeniser.PeekNext() is TriviaToken t) || t.TriviaType != TriviaType.Colon)
+                    if (_tokeniser.PeekNext() != null && _tokeniser.PeekNext() is TriviaToken t && t.TriviaType == TriviaType.Colon)
                     {
                         _tokeniser.MoveNext();
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.NumberExpected, $"Expected a second specifier to follow the colon.");
@@ -120,7 +120,7 @@ namespace HumanDateParser
                         seconds = msNum.Value;
                     }
 
-                    if (!_tokeniser.MoveNext() || !(_tokeniser.Current is TriviaToken t0) )
+                    if (!_tokeniser.MoveNext() || !(_tokeniser.Current is TriviaToken t0))
                         throw new ParseException(ParseFailReason.UnitExpected, "Expected an AM or PM specifier.");
                     switch (t0.TriviaType)
                     {

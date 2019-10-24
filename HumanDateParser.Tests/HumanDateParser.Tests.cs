@@ -7,6 +7,28 @@ namespace HumanDateParser.Tests
     public class Tests
     {
         [TestMethod]
+        public void TestTimesWithMultipleColons()
+        {
+            var baset = new DateTime(2019, 10, 05, 16, 00, 00);
+
+            var actual = new DateTime(baset.Year, baset.Month, baset.Day, 02, 12, 24);
+            var parsed = HumanDateParser.Parse($"at 2:12:24 AM", baset);
+
+            Assert.AreEqual(actual.ToString(), parsed.ToString());
+        }
+
+        [TestMethod]
+        public void TestTimeWithOneColon()
+        {
+            var baset = new DateTime(2019, 10, 05, 16, 00, 00);
+
+            var actual = new DateTime(baset.Year, baset.Month, baset.Day, 02, 12, 00);
+            var parsed = HumanDateParser.Parse($"at 2:12:00 AM", baset);
+
+            Assert.AreEqual(actual.ToString(), parsed.ToString());
+        }
+
+        [TestMethod]
         [DataRow(1), DataRow(2), DataRow(3)]
         public void TestImpliedRelativeFutureTimes(int months)
         {
