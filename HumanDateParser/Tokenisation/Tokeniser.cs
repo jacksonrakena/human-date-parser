@@ -155,6 +155,8 @@ namespace HumanDateParser
                 case "HOURS":
                 case "HOUR":
                     return new ParseToken(TokenKind.Hour, string.Empty);
+                case "A":
+                    return new NumberToken(1);
                 default:
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Unknown token '{identifier}'.");
             }
