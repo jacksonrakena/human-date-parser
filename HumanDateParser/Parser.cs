@@ -97,8 +97,8 @@ namespace HumanDateParser
         public void ReadRelativeDayTime(ref DateTime date, NumberToken firstNumberToken, TriviaToken specifierToken)
         {
             var hours = firstNumberToken.Value;
-            var minutes = date.Minute;
-            var seconds = date.Second;
+            var minutes = 0;
+            var seconds = 0;
             switch (specifierToken.TriviaType)
             {
                 case TriviaType.Am:
@@ -137,6 +137,7 @@ namespace HumanDateParser
                 default:
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit '{specifierToken.TriviaType.ToString()}', expected AM or PM.");
             }
+            if (hours >= 24 || minutes >= 60 || seconds >= 60) throw new ParseException(ParseFailReason.InvalidUnit, $"Not a valid time."); 
             date = new DateTime(date.Year, date.Month, date.Day, hours, minutes, seconds);
         }
 
