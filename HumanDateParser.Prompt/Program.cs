@@ -10,7 +10,7 @@ namespace HumanDateParser.Prompt
         {
             while (true)
             {
-                Console.WriteLine("Input:");
+                Console.Write("Enter a string: ");
                 var val = Console.ReadLine();
                 try
                 {

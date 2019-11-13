@@ -80,7 +80,7 @@ namespace HumanDateParser
                     return new TodayToken();
                 case "NOW":
                     return new TodayToken();
-                case "TOMMOROW":
+                case "TOMORROW":
                     return new TomorrowToken();
                 case "YESTERDAY":
                     return new YesterdayToken();
