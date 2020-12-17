@@ -2,6 +2,7 @@
 A .NET date parser that can parse human-readable relative and absolute dates to `System.DateTime` instances. This is a completely rewritten version of [ti-ka/human-date-parser](https://github.com/ti-ka/human-date-parser).
 
 ### ✍ Usage
+`HumanDateParser.Parse(string)` returns a `DateTime` object.  
 (C#)  
 Assuming current time is October 23rd, 2019, 9:39pm (23/10/2019, 2139h)...
 ```csharp
@@ -24,4 +25,4 @@ You can add the package to your project from [NuGet under Abyssal.HumanDateParse
 Feel free to contribute.
 
 ### Copyright
-Copyright (c) 2019 Abyssal 💛
+Copyright (c) 2019-2020 abyssal
