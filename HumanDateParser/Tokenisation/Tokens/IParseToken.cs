@@ -1,4 +1,4 @@
-﻿namespace HumanDateParser
+﻿namespace HumanDateParser.Tokenisation.Tokens
 {
     /// <summary>
     ///     A parse token.

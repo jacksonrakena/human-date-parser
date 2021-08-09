@@ -1,22 +1,30 @@
 ﻿using System;
 using System.Collections.Generic;
+using HumanDateParser.Buffers;
+using HumanDateParser.Tokenisation;
+using HumanDateParser.Tokenisation.Tokens;
 
 namespace HumanDateParser
 {
     internal class Parser
     {
-        private readonly DateTime _baseTime;
+        private readonly DateTimeOffset _baseTime;
+        private readonly ParserOptions _options;
         private readonly Tokeniser _tokeniser;
 
-        public Parser(string text, DateTime relativeTo)
+        public Parser(string text, ParserOptions options)
         {
-            _baseTime = relativeTo;
-            _tokeniser = new Tokeniser(text);
+            _options = options;
+            _baseTime = options.RelativeTo ?? DateTimeOffset.Now;
+            _tokeniser = new Tokeniser(new CharacterBufferStream(text));
         }
 
-        public void ReadImpliedRelativeTimeSpan(ref DateTime baseTime, NumberToken num, TimeUnitToken units)
+        public void ReadImpliedRelativeTimeSpan(ref DateTimeOffset baseTime, NumberToken num, TimeUnitToken units)
         {
             var number = num.Value;
+            if (_tokeniser.ContainsToken<RelativeToken>() && !_options.AllowRelativeTokens) 
+                throw new ParseException(ParseFailReason.RelativeTokensNotAllowed,
+                    "Relative tokens are not allowed.");
             if (_tokeniser.ContainsToken<RelativeToken>(c => c.RelativeType == RelativeType.Ago)) number *= -1;
             try
             {
@@ -38,7 +46,7 @@ namespace HumanDateParser
             }
         }
 
-        public void ReadRelativeDateUnit(bool isFuture, ref DateTime baseTime, IParseToken specifierOrDowUnitToken)
+        public void ReadRelativeDateUnit(bool isFuture, ref DateTimeOffset baseTime, IParseToken specifierOrDowUnitToken)
         {
             switch (specifierOrDowUnitToken)
             {
@@ -100,7 +108,7 @@ namespace HumanDateParser
             }
         }
 
-        public void ReadRelativeDayTime(ref DateTime date, NumberToken firstNumberToken, TriviaToken specifierToken)
+        public void ReadRelativeDayTime(ref DateTimeOffset date, NumberToken firstNumberToken, TriviaToken specifierToken)
         {
             var hours = firstNumberToken.Value;
             var minutes = 0;
@@ -144,7 +152,7 @@ namespace HumanDateParser
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Invalid unit '{specifierToken.TriviaType.ToString()}', expected AM or PM.");
             }
             if (hours >= 24 || minutes >= 60 || seconds >= 60) throw new ParseException(ParseFailReason.InvalidUnit, $"Not a valid time."); 
-            date = new DateTime(date.Year, date.Month, date.Day, hours, minutes, seconds);
+            date = new DateTimeOffset(date.Year, date.Month, date.Day, hours, minutes, seconds, date.Offset);
         }
 
         public DetailedParseResult ParseDetailed()
@@ -153,7 +161,7 @@ namespace HumanDateParser
             return new DetailedParseResult(result, _tokeniser.All());
         }
 
-        public DateTime Parse()
+        public DateTimeOffset Parse()
         {
             var date = _baseTime;
 
@@ -173,7 +181,21 @@ namespace HumanDateParser
                         ReadRelativeDayTime(ref date, atTriviaNumber, triviaToken);
                         break;
                     case NumberToken numberToken:
-                        if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have number without units following.");
+                        // Could possibly be a year..?
+                        if (!_tokeniser.MoveNext())
+                        {
+                            date = _options.PassedYearBehaviour switch
+                            {
+                                PassedYearOptions.SetToJanuaryFirstOfYear => new DateTimeOffset(numberToken.Value, 1, 1,
+                                    0, 0, 0, date.Offset),
+                                PassedYearOptions.SetToCurrentDateInYear => new DateTimeOffset(numberToken.Value,
+                                    date.Month, date.Day, date.Hour, date.Minute, date.Second, date.Offset),
+                                PassedYearOptions.ThrowException => throw new ParseException(ParseFailReason.UnitExpected, "Expected a unit after a number."),
+                                _ => throw new ParseException(ParseFailReason.Internal,
+                                    "Switch cases for passed year are out-of-date.")
+                            };
+                            break;
+                        }
                         switch (_tokeniser.Current)
                         {
                             case TimeUnitToken timeUnitToken:
@@ -185,8 +207,12 @@ namespace HumanDateParser
                             default:
                                 throw new ParseException(ParseFailReason.InvalidUnit, $"Expected AM, PM, a colon, or a time unit. Received {_tokeniser.Current.GetType().Name}.");
                         }
+
                         break;
                     case RelativeToken relativeToken when relativeToken.RelativeType == RelativeType.Last:
+                        if (!_options.AllowRelativeTokens)
+                            throw new ParseException(ParseFailReason.RelativeTokensNotAllowed,
+                                "Relative tokens are not allowed.");
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'last' without day of week, or specifier unit following.");
                         ReadRelativeDateUnit(false, ref date, _tokeniser.Current);
                         break;
@@ -199,12 +225,25 @@ namespace HumanDateParser
                         date = date.AddDays(-1);
                         break;
                     case RelativeToken relativeToken when relativeToken.RelativeType == RelativeType.Next:
+                        if (!_options.AllowRelativeTokens)
+                            throw new ParseException(ParseFailReason.RelativeTokensNotAllowed,
+                                "Relative tokens are not allowed.");
                         if (!_tokeniser.MoveNext()) throw new ParseException(ParseFailReason.UnitExpected, $"Cannot have 'next' without day of week, or specifier unit following.");
                         ReadRelativeDateUnit(true, ref date, _tokeniser.Current);
                         break;
-
                 }
             }
+
+            if (_options.NewestTimeBound != null && date > _options.NewestTimeBound)
+            {
+                throw new ParseException(ParseFailReason.TooFar, "Parsed date is too far in the future.");
+            }
+
+            if (_options.OldestTimeBound != null && date > _options.OldestTimeBound)
+            {
+                throw new ParseException(ParseFailReason.TooOld, "Parsed date is too far in the past.");
+            }
+            
             return date;
         }
     }

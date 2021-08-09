@@ -1,6 +1,7 @@
 ﻿using System;
+using System.Linq;
 
-namespace HumanDateParser
+namespace HumanDateParser.Buffers
 {
     internal class CharacterBufferStream : BufferStream<int>
     {
@@ -10,10 +11,6 @@ namespace HumanDateParser
             {
                 _list.Add(ch);
             }
-        }
-
-        public override void Dispose()
-        {
         }
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HumanDateParser
+﻿namespace HumanDateParser.Tokenisation.Tokens
 {
     internal class TimeUnitToken : IParseToken
     {

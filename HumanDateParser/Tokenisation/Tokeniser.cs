@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using HumanDateParser;
+using HumanDateParser.Buffers;
+using HumanDateParser.Tokenisation.Tokens;
 
-namespace HumanDateParser
+namespace HumanDateParser.Tokenisation
 {
     internal class Tokeniser : BufferStream<IParseToken>, IDisposable
     {
@@ -14,9 +15,9 @@ namespace HumanDateParser
         public bool ContainsToken<TTokenType>() where TTokenType : IParseToken => _list.Any(c => c is TTokenType);
         public bool ContainsToken<TTokenType>(Predicate<TTokenType> predicate) where TTokenType : IParseToken => _list.Any(c => c is TTokenType t && predicate(t));
 
-        public Tokeniser(string text)
+        public Tokeniser(CharacterBufferStream text)
         {
-            _buffer = new CharacterBufferStream(text);
+            _buffer = text;
 
             while (_buffer.MoveNext())
             {
@@ -115,6 +116,8 @@ namespace HumanDateParser
                 case "HOUR":
                     return new TimeUnitToken(TimeUnit.Hour);
                 case "MS":
+                case "MSEC":
+                case "MILLIS":
                 case "MILLISEC":
                 case "MILLISECONDS":
                     return new TimeUnitToken(TimeUnit.Millisecond);
@@ -138,6 +141,10 @@ namespace HumanDateParser
                     return new EndToken();
                 case "A":
                     return new NumberToken(1);
+                case "FEW":
+                    return new NumberToken(TokeniserConstants.FEW);
+                case "SOME":
+                    return new NumberToken(TokeniserConstants.SOME);
                 default:
                     throw new ParseException(ParseFailReason.InvalidUnit, $"Unknown token '{identifier}'.");
             }
@@ -183,12 +190,6 @@ namespace HumanDateParser
             }
             if (!int.TryParse(s.ToString(), out var i)) throw new ParseException(ParseFailReason.InvalidUnit, $"The provided number was not a valid integer.");
             return new NumberToken(i);
-        }
-
-        public override void Dispose()
-        {
-            _buffer.Dispose();
-            _list.Clear();
         }
     }
 }

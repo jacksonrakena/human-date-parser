@@ -1,23 +1,36 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using HumanDateParser.Tokenisation.Tokens;
 
 namespace HumanDateParser
 {
     /// <summary>
-    ///     A static class that can parse human-readable dates.
+    ///     A class that can parse human-readable dates.
     /// </summary>
-    public static class HumanDateParser
+    public class HumanDateParser
     {
+        private readonly ParserOptions _options;
+        
+        /// <summary>
+        ///     Creates a new <see cref="HumanDateParser"/> using the provided options.
+        ///     Providing <c>null</c> will use the default options.
+        /// </summary>
+        /// <param name="options">
+        ///     The options to use. Defaults to the default options.
+        /// </param>
+        public HumanDateParser(ParserOptions? options = null)
+        {
+            _options = options ?? new ParserOptions();
+        }
         /// <summary>
         ///     Parses a human-readable date into a <see cref="DateTime"/>.
         /// </summary>
         /// <param name="dateString">A human-readable date.</param>
-        /// <param name="relativeTo">The time to parse relative to, for relative dates. Defaults to <see cref="DateTime.Now"/>.</param>
         /// <returns>The provided date, in <see cref="DateTime"/> format.</returns>
         /// <exception cref="ParseException">An exception arises during parsing.</exception>
-        public static DateTime Parse(string dateString, DateTime? relativeTo = null)
-            => new Parser(dateString, relativeTo ?? DateTime.Now).Parse();
+        public DateTimeOffset Parse(string dateString)
+            => new Parser(dateString, _options).Parse();
 
         /// <summary>
         ///     Parses a human-readable date into a <see cref="DateTime"/>, as well as including
@@ -25,11 +38,10 @@ namespace HumanDateParser
         ///     not be used by most consumers.
         /// </summary>
         /// <param name="dateString">A human-readable date.</param>
-        /// <param name="relativeTo">The time to parse relative to, for relative dates. Defaults to <see cref="DateTime.Now"/>.</param>
         /// <returns>The provided date, in <see cref="DateTime"/> format.</returns>
         /// <exception cref="ParseException">An exception arises during parsing.</exception>
-        public static DetailedParseResult ParseDetailed(string dateString, DateTime? relativeTo = null)
-            => new Parser(dateString, relativeTo ?? DateTime.Now).ParseDetailed();
+        public DetailedParseResult DetailedParse(string dateString)
+            => new Parser(dateString, _options).ParseDetailed();
     }
 
     /// <summary>
@@ -40,14 +52,14 @@ namespace HumanDateParser
         /// <summary>
         ///     The result.
         /// </summary>
-        public DateTime Result { get; }
+        public DateTimeOffset Result { get; }
 
         /// <summary>
         ///     The tokens used to construct this result.
         /// </summary>
         public List<IParseToken> Tokens { get; }
 
-        internal DetailedParseResult(DateTime result, List<IParseToken> tokens)
+        internal DetailedParseResult(DateTimeOffset result, List<IParseToken> tokens)
         {
             Result = result;
             Tokens = tokens;

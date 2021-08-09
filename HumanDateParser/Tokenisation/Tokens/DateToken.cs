@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace HumanDateParser
+namespace HumanDateParser.Tokenisation.Tokens
 {
     internal class DateToken : IParseToken
     {

@@ -50,6 +50,21 @@ namespace HumanDateParser
         /// <summary>
         ///     An internal error occurred.
         /// </summary>
-        Internal
+        Internal,
+        
+        /// <summary>
+        ///     The parsed date is further back in time than the parsers' <see cref="ParserOptions.OldestTimeBound"/>.
+        /// </summary>
+        TooOld,
+       
+        /// <summary>
+        ///     The parsed date is further in the future than the parsers' <see cref="ParserOptions.NewestTimeBound"/>.
+        /// </summary>
+        TooFar,
+        
+        /// <summary>
+        ///     Relative tokens are not allowed, per the parsers' <see cref="ParserOptions.AllowRelativeTokens"/>.
+        /// </summary>
+        RelativeTokensNotAllowed
     }
 }
