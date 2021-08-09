@@ -19,10 +19,10 @@ HumanDateParser.Parse("now") // 23/10/2019, 2139h
 HumanDateParser.Parse("") // 23/10/2019, 2139h
 ```
 More functionality is being implemented over time.  
-You can add the package to your project from [NuGet under Abyssal.HumanDateParser](https://www.nuget.org/packages/Abyssal.HumanDateParser). It depends on .NET Standard 2.1.
+You can add the package to your project from [NuGet under Abyssal.HumanDateParser](https://www.nuget.org/packages/Abyssal.HumanDateParser). It depends on .NET 5.0.
 
 ### Contributing
 Feel free to contribute.
 
 ### Copyright
-Copyright (c) 2019-2020 abyssal
+Copyright (c) 2019-2021 abyssal
